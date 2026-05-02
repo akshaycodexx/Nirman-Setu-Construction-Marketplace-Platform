@@ -1,0 +1,126 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import SupplierLayout from '../../components/SupplierLayout';
+import { useSupplier } from '../../context/SupplierContext';
+import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight } from 'lucide-react';
+
+const STATUS_COLORS = {
+  confirmed: 'bg-indigo-100 text-indigo-700',
+  dispatched: 'bg-orange-100 text-orange-700',
+  delivered: 'bg-green-100 text-green-700',
+};
+
+export default function SupplierDashboard() {
+  const { supplier, getAuthHeaders } = useSupplier();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
+  const [available, setAvailable] = useState(supplier?.availability ?? true);
+
+  useEffect(() => {
+    axios.get('/api/supplier/dashboard', { headers: getAuthHeaders() })
+      .then(r => setData(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggleAvailability = async () => {
+    setToggling(true);
+    try {
+      const { data: res } = await axios.put('/api/supplier/availability',
+        { availability: !available },
+        { headers: getAuthHeaders() }
+      );
+      setAvailable(res.availability);
+    } catch {}
+    setToggling(false);
+  };
+
+  const stats = [
+    { key: 'total', label: 'Total Orders', icon: Package, color: 'bg-gray-900 text-white' },
+    { key: 'confirmed', label: 'To Dispatch', icon: CheckCircle, color: 'bg-indigo-50 text-indigo-700' },
+    { key: 'dispatched', label: 'In Transit', icon: Truck, color: 'bg-orange-50 text-orange-700' },
+    { key: 'delivered', label: 'Delivered', icon: CheckCircle, color: 'bg-green-50 text-green-700' },
+  ];
+
+  return (
+    <SupplierLayout>
+      <div className="mb-5 flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <LayoutDashboard className="w-6 h-6 text-emerald-500" /> Dashboard
+          </h1>
+          <p className="text-gray-500 text-sm mt-0.5">Welcome, {supplier?.name}</p>
+        </div>
+
+        {/* Availability toggle */}
+        <button
+          onClick={toggleAvailability}
+          disabled={toggling}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
+            available
+              ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+              : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+          }`}
+        >
+          {available
+            ? <><ToggleRight className="w-5 h-5" /> Available</>
+            : <><ToggleLeft className="w-5 h-5" /> Unavailable</>
+          }
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {stats.map(s => (
+          <div key={s.key} className={`rounded-2xl p-4 border border-gray-100 ${s.color}`}>
+            <s.icon className="w-5 h-5 mb-2 opacity-70" />
+            <p className="text-2xl font-black">{loading ? '—' : data?.stats?.[s.key] ?? 0}</p>
+            <p className="text-xs font-medium opacity-70 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent orders */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900">Recent Orders</h2>
+          <Link to="/supplier/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-medium">
+            All Orders <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="divide-y">{[...Array(4)].map((_, i) => <div key={i} className="h-14 animate-pulse bg-gray-50" />)}</div>
+        ) : !data?.recent?.length ? (
+          <div className="py-12 text-center text-gray-400">
+            <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p>Koi order assign nahi hua abhi</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {data.recent.map(order => (
+              <Link
+                key={order._id}
+                to={`/supplier/orders/${order.orderId}`}
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-mono text-sm font-bold text-gray-900">{order.orderId}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {order.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 capitalize">{order.category} &bull; {order.delivery?.city}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </SupplierLayout>
+  );
+}

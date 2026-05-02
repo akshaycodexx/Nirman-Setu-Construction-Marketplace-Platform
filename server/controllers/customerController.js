@@ -1,0 +1,120 @@
+const jwt = require('jsonwebtoken');
+const Customer = require('../models/Customer');
+const Order = require('../models/Order');
+const { createRazorpayOrder, verifySignature } = require('../utils/razorpay');
+
+function signToken(id) {
+  return jwt.sign({ id, role: 'customer' }, process.env.JWT_SECRET, { expiresIn: '30d' });
+}
+
+// POST /api/customer/register
+exports.register = async (req, res) => {
+  try {
+    const { name, phone, email, password } = req.body;
+    if (!name || !phone || !password) return res.status(400).json({ message: 'Name, phone and password required' });
+    const exists = await Customer.findOne({ phone });
+    if (exists) return res.status(409).json({ message: 'Phone already registered' });
+    const customer = await Customer.create({ name, phone, email, password });
+    const token = signToken(customer._id);
+    res.status(201).json({ token, customer: { _id: customer._id, name: customer.name, phone: customer.phone, email: customer.email } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/customer/login
+exports.login = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    const customer = await Customer.findOne({ phone });
+    if (!customer || !(await customer.comparePassword(password))) {
+      return res.status(401).json({ message: 'Invalid phone or password' });
+    }
+    if (!customer.isActive) return res.status(403).json({ message: 'Account deactivated' });
+    const token = signToken(customer._id);
+    res.json({ token, customer: { _id: customer._id, name: customer.name, phone: customer.phone, email: customer.email } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/customer/me
+exports.getMe = async (req, res) => {
+  res.json(req.customer);
+};
+
+// GET /api/customer/orders
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ customerId: req.customer._id })
+      .select('-supplierId -supplierNote -adminNote')
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/customer/orders/:orderId
+exports.getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id })
+      .select('-supplierId -supplierNote -adminNote');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/customer/orders/:orderId/payment/create
+exports.createPayment = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.status !== 'quoted') return res.status(400).json({ message: 'Order must be quoted before payment' });
+    if (order.payment.status !== 'none') return res.status(400).json({ message: 'Payment already initiated' });
+    if (!order.quote?.amount) return res.status(400).json({ message: 'No quote available' });
+
+    const advanceAmount = Math.ceil(order.quote.amount * 0.3);
+    const rzpOrder = await createRazorpayOrder(advanceAmount, order.orderId);
+
+    order.payment.razorpayOrderId = rzpOrder.id;
+    order.payment.advanceAmount = advanceAmount;
+    await order.save();
+
+    res.json({
+      razorpayOrderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      advanceAmount,
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/customer/orders/:orderId/payment/verify
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { razorpayPaymentId, razorpaySignature } = req.body;
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const valid = verifySignature(order.payment.razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    if (!valid) return res.status(400).json({ message: 'Payment verification failed' });
+
+    order.payment.status = 'advance_paid';
+    order.payment.razorpayPaymentId = razorpayPaymentId;
+    order.payment.razorpaySignature = razorpaySignature;
+    order.payment.advancePaidAt = new Date();
+    order.status = 'confirmed';
+    order.timeline.push({ status: 'confirmed', note: 'Advance payment received', by: 'customer' });
+    await order.save();
+
+    res.json({ message: 'Payment verified', order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

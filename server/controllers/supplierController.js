@@ -1,0 +1,146 @@
+const jwt = require('jsonwebtoken');
+const Supplier = require('../models/Supplier');
+const Order = require('../models/Order');
+
+const signToken = (id) =>
+  jwt.sign({ id, role: 'supplier' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+// POST /api/supplier/login
+const login = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password)
+      return res.status(400).json({ success: false, message: 'Phone and password required' });
+
+    const supplier = await Supplier.findOne({ phone });
+    if (!supplier || !(await supplier.comparePassword(password)))
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+    if (!supplier.isActive)
+      return res.status(403).json({ success: false, message: 'Account suspended. Contact admin.' });
+
+    res.json({
+      success: true,
+      token: signToken(supplier._id),
+      supplier: {
+        id: supplier._id,
+        name: supplier.name,
+        phone: supplier.phone,
+        businessName: supplier.businessName,
+        kycStatus: supplier.kycStatus,
+        verifiedBadge: supplier.verifiedBadge,
+        categories: supplier.categories,
+      },
+    });
+  } catch (err) {
+    console.error('supplier login error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/supplier/me
+const getMe = (req, res) => res.json({ success: true, supplier: req.supplier });
+
+// GET /api/supplier/orders
+const getMyOrders = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = { supplierId: req.supplier._id };
+    if (status && status !== 'all') filter.status = status;
+
+    const orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .select('-customer.phone -customer.email -supplierId');
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error('getMyOrders error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/supplier/orders/:orderId
+const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      orderId: req.params.orderId,
+      supplierId: req.supplier._id,
+    }).select('-customer.phone -customer.email -supplierId -quote.amount');
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    console.error('supplier getOrderById error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/supplier/orders/:orderId/status
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { status, supplierNote } = req.body;
+    const allowed = ['dispatched', 'delivered'];
+    if (!allowed.includes(status))
+      return res.status(400).json({ success: false, message: 'Supplier can only set dispatched or delivered' });
+
+    const order = await Order.findOne({
+      orderId: req.params.orderId,
+      supplierId: req.supplier._id,
+    });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    // Only allow forward movement
+    const flow = ['confirmed', 'dispatched', 'delivered'];
+    const currentIdx = flow.indexOf(order.status);
+    const newIdx = flow.indexOf(status);
+    if (newIdx <= currentIdx)
+      return res.status(400).json({ success: false, message: 'Invalid status transition' });
+
+    order.status = status;
+    if (supplierNote) order.supplierNote = supplierNote;
+    order.timeline.push({ status, note: supplierNote || '', by: 'supplier' });
+    await order.save();
+
+    res.json({ success: true, order });
+  } catch (err) {
+    console.error('supplier updateOrderStatus error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/supplier/dashboard
+const getDashboard = async (req, res) => {
+  try {
+    const sid = req.supplier._id;
+    const [total, confirmed, dispatched, delivered] = await Promise.all([
+      Order.countDocuments({ supplierId: sid }),
+      Order.countDocuments({ supplierId: sid, status: 'confirmed' }),
+      Order.countDocuments({ supplierId: sid, status: 'dispatched' }),
+      Order.countDocuments({ supplierId: sid, status: 'delivered' }),
+    ]);
+
+    const recent = await Order.find({ supplierId: sid })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('orderId status category delivery.city delivery.date createdAt');
+
+    res.json({ success: true, stats: { total, confirmed, dispatched, delivered }, recent });
+  } catch (err) {
+    console.error('supplier getDashboard error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/supplier/availability
+const updateAvailability = async (req, res) => {
+  try {
+    const { availability } = req.body;
+    await Supplier.findByIdAndUpdate(req.supplier._id, { availability });
+    res.json({ success: true, availability });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability };
