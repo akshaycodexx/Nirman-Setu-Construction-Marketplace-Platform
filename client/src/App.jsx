@@ -20,6 +20,8 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminOrderDetail from './pages/admin/AdminOrderDetail';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminPayouts from './pages/admin/AdminPayouts';
 
 // Supplier pages
 import SupplierLogin from './pages/supplier/SupplierLogin';
@@ -103,6 +105,8 @@ export default function App() {
             <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
             <Route path="/admin/orders/:orderId" element={<AdminGuard><AdminOrderDetail /></AdminGuard>} />
             <Route path="/admin/suppliers" element={<AdminGuard><AdminSuppliers /></AdminGuard>} />
+            <Route path="/admin/analytics" element={<AdminGuard><AdminAnalytics /></AdminGuard>} />
+            <Route path="/admin/payouts" element={<AdminGuard><AdminPayouts /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 

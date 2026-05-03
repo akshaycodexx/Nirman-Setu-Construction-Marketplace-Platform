@@ -4,13 +4,15 @@ import axios from 'axios';
 import { useAdmin } from '../context/AdminContext';
 import {
   LayoutDashboard, ClipboardList, LogOut,
-  HardHat, Menu, X, ChevronRight, Users, Settings, Bell, IndianRupee
+  HardHat, Menu, X, ChevronRight, Users, Settings, Bell, IndianRupee, TrendingUp, Wallet
 } from 'lucide-react';
 
 const navLinks = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
   { to: '/admin/suppliers', icon: Users, label: 'Suppliers' },
+  { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
+  { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 

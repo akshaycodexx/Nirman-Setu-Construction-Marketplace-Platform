@@ -501,10 +501,123 @@ const resolveComplaint = async (req, res) => {
   }
 };
 
+// GET /api/admin/analytics
+const getAnalytics = async (req, res) => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [monthly, categories, cities, topSuppliers] = await Promise.all([
+      // Monthly order + revenue breakdown
+      Order.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            orders: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [
+                  { $in: ['$payment.status', ['advance_paid', 'fully_paid']] },
+                  { $ifNull: ['$payment.advanceAmount', 0] },
+                  0,
+                ],
+              },
+            },
+            quoted: { $sum: { $ifNull: ['$quote.amount', 0] } },
+          },
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+      ]),
+
+      // Category breakdown
+      Order.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 }, revenue: { $sum: { $ifNull: ['$quote.amount', 0] } } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ]),
+
+      // City breakdown
+      Order.aggregate([
+        { $group: { _id: '$delivery.city', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 8 },
+      ]),
+
+      // Top suppliers by delivered orders
+      Order.aggregate([
+        { $match: { status: 'delivered', supplierId: { $ne: null } } },
+        {
+          $group: {
+            _id: '$supplierId',
+            delivered: { $sum: 1 },
+            revenue: { $sum: { $ifNull: ['$payment.advanceAmount', 0] } },
+          },
+        },
+        { $sort: { delivered: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: 'suppliers', localField: '_id', foreignField: '_id', as: 'supplier' } },
+        { $unwind: '$supplier' },
+        { $project: { delivered: 1, revenue: 1, name: '$supplier.name', businessName: '$supplier.businessName' } },
+      ]),
+    ]);
+
+    res.json({ success: true, monthly, categories, cities, topSuppliers });
+  } catch (err) {
+    console.error('getAnalytics error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/admin/payouts
+const getPayouts = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = {
+      supplierId: { $ne: null },
+      'payment.status': { $in: ['advance_paid', 'fully_paid'] },
+    };
+    if (status === 'pending') filter['supplierPayout.status'] = 'pending';
+    if (status === 'paid') filter['supplierPayout.status'] = 'paid';
+
+    const orders = await Order.find(filter)
+      .populate('supplierId', 'name phone businessName')
+      .select('orderId category delivery.city payment.status payment.advanceAmount supplierPayout supplierId createdAt status')
+      .sort({ createdAt: -1 });
+
+    // Summary aggregation
+    const [pendingAgg, paidAgg] = await Promise.all([
+      Order.aggregate([
+        { $match: { supplierId: { $ne: null }, 'payment.status': { $in: ['advance_paid', 'fully_paid'] }, 'supplierPayout.status': 'pending' } },
+        { $group: { _id: null, count: { $sum: 1 }, total: { $sum: { $ifNull: ['$payment.advanceAmount', 0] } } } },
+      ]),
+      Order.aggregate([
+        { $match: { supplierId: { $ne: null }, 'supplierPayout.status': 'paid' } },
+        { $group: { _id: null, count: { $sum: 1 }, total: { $sum: { $ifNull: ['$supplierPayout.amount', 0] } } } },
+      ]),
+    ]);
+
+    res.json({
+      success: true,
+      orders,
+      summary: {
+        pending: { count: pendingAgg[0]?.count || 0, total: pendingAgg[0]?.total || 0 },
+        paid: { count: paidAgg[0]?.count || 0, total: paidAgg[0]?.total || 0 },
+      },
+    });
+  } catch (err) {
+    console.error('getPayouts error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
   assignSupplier, markFullyPaid,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
   getNotifications, markSupplierPayout, resolveComplaint,
+  getAnalytics, getPayouts,
 };
