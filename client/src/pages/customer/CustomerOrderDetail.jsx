@@ -3,7 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
+import { useSocket } from '../../context/SocketContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
+import ChatPanel from '../../components/ChatPanel';
 import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
@@ -22,6 +24,7 @@ function loadRazorpayScript() {
 export default function CustomerOrderDetail() {
   const { orderId } = useParams();
   const { customer, authHeader } = useCustomer();
+  const socketRef = useSocket();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -57,6 +60,26 @@ export default function CustomerOrderDetail() {
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchOrder(); }, [orderId]);
+
+  // Real-time: join order room, refresh on status update
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket || !orderId) return;
+
+    socket.emit('join:order', orderId);
+
+    const handleUpdate = (data) => {
+      const statusLabels = { pending: 'Pending', quoted: 'Quote Ready', confirmed: 'Confirmed', dispatched: 'Dispatched', delivered: 'Delivered', cancelled: 'Cancelled' };
+      toast.success(`Order update: ${statusLabels[data.status] || data.status}`);
+      fetchOrder();
+    };
+
+    socket.on('order:updated', handleUpdate);
+    return () => {
+      socket.off('order:updated', handleUpdate);
+      socket.emit('leave:order', orderId);
+    };
+  }, [socketRef, orderId]);
 
   const handleCancel = async () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
@@ -338,6 +361,9 @@ export default function CustomerOrderDetail() {
             )}
           </div>
         )}
+
+        {/* Support Chat */}
+        <ChatPanel orderId={orderId} role="customer" authHeaders={authHeader} />
 
         {/* Timeline */}
         {order.timeline?.length > 0 && (

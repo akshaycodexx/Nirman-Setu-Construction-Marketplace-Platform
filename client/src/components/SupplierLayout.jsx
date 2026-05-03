@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSupplier } from '../context/SupplierContext';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings } from 'lucide-react';
+import { useSocket } from '../context/SocketContext';
+import toast from 'react-hot-toast';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings, Bell } from 'lucide-react';
 
 const navLinks = [
   { to: '/supplier/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -13,7 +15,31 @@ export default function SupplierLayout({ children }) {
   const { supplier, logoutSupplier } = useSupplier();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const socketRef = useSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket || !supplier?._id) return;
+    socket.emit('join:supplier', supplier._id);
+    const handler = (data) => {
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex items-start gap-3 bg-white border border-emerald-200 shadow-lg rounded-2xl px-4 py-3 max-w-sm`}>
+          <Bell className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Naya Order Mila!</p>
+            <p className="text-xs text-gray-600 mt-0.5 capitalize">{data.category} — {data.city}</p>
+            <Link to={`/supplier/orders/${data.orderId}`} onClick={() => toast.dismiss(t.id)}
+              className="text-xs text-emerald-600 font-semibold mt-1 inline-block hover:underline">
+              {data.orderId} dekho →
+            </Link>
+          </div>
+        </div>
+      ), { duration: 10000 });
+    };
+    socket.on('supplier:new-order', handler);
+    return () => socket.off('supplier:new-order', handler);
+  }, [socketRef, supplier?._id]);
 
   const handleLogout = () => {
     logoutSupplier();

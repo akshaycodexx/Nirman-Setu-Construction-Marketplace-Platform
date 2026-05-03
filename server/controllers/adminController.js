@@ -4,6 +4,7 @@ const Admin = require('../models/Admin');
 const Order = require('../models/Order');
 const Supplier = require('../models/Supplier');
 const { sendQuoteNotification, sendStatusNotification, sendSupplierAssignment } = require('../utils/mailer');
+const { notifyStatusUpdate, notifySupplierAssigned } = require('../utils/whatsapp');
 const Customer = require('../models/Customer');
 
 const signToken = (id) =>
@@ -149,6 +150,15 @@ const updateStatus = async (req, res) => {
 
     sendStatusNotification(order).catch(e => console.error('Status email failed:', e.message));
 
+    // Auto WhatsApp to customer
+    notifyStatusUpdate(order);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: order.status, adminNote: order.adminNote });
+      io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     console.error('updateStatus error:', err);
@@ -179,6 +189,14 @@ const sendQuote = async (req, res) => {
       console.error('Quote email failed:', err.message)
     );
 
+    // Auto WhatsApp quote to customer
+    notifyStatusUpdate(order);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: 'quoted', quoteAmount: order.quote?.amount });
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     console.error('sendQuote error:', err);
@@ -203,6 +221,20 @@ const assignSupplier = async (req, res) => {
     await order.populate('supplierId', 'name phone businessName');
 
     sendSupplierAssignment(order, supplier).catch(e => console.error('Supplier email failed:', e.message));
+
+    // Auto WhatsApp to customer (confirmed) + supplier (assignment)
+    notifyStatusUpdate(order);
+    notifySupplierAssigned(order, supplier);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: 'confirmed' });
+      io.to(`supplier:${supplierId}`).emit('supplier:new-order', {
+        orderId: order.orderId,
+        category: order.category,
+        city: order.delivery?.city,
+      });
+    }
 
     res.json({ success: true, order });
   } catch (err) {

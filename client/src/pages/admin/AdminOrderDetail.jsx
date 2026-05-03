@@ -3,11 +3,17 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
+import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
   Star, IndianRupee, Wallet
 } from 'lucide-react';
+
+const adminAuthHeader = () => {
+  const token = localStorage.getItem('adminToken');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const PAYMENT_LABELS = {
   none: { label: 'Unpaid', cls: 'bg-gray-100 text-gray-600' },
@@ -224,6 +230,9 @@ export default function AdminOrderDetail() {
 
           {/* Payment Status */}
           <PaymentCard order={order} setOrder={setOrder} orderId={orderId} />
+
+          {/* Support Chat */}
+          <ChatPanel orderId={orderId} role="admin" authHeaders={adminAuthHeader} />
 
           {/* Customer Review */}
           {order.review?.rating && (

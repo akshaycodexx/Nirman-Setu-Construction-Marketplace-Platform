@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
+import { useSocket } from '../../context/SocketContext';
 import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 
 const STATUS_STEPS = [
@@ -17,17 +18,32 @@ export default function SupplierOrderDetail() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { getAuthHeaders } = useSupplier();
+  const socketRef = useSocket();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [note, setNote] = useState('');
 
-  useEffect(() => {
+  const fetchOrder = () =>
     axios.get(`/api/supplier/orders/${orderId}`, { headers: getAuthHeaders() })
       .then(r => setOrder(r.data.order))
       .catch(() => toast.error('Order nahi mila'))
       .finally(() => setLoading(false));
-  }, [orderId]);
+
+  useEffect(() => { fetchOrder(); }, [orderId]);
+
+  // Real-time: join order room, re-fetch on admin update
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket || !orderId) return;
+    socket.emit('join:order', orderId);
+    const handler = () => fetchOrder();
+    socket.on('order:updated', handler);
+    return () => {
+      socket.off('order:updated', handler);
+      socket.emit('leave:order', orderId);
+    };
+  }, [socketRef, orderId]);
 
   const nextStatus = order ? FLOW[FLOW.indexOf(order.status) + 1] : null;
 

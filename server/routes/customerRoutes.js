@@ -7,6 +7,7 @@ const {
   reviewOrder,
   createPayment, verifyPayment,
 } = require('../controllers/customerController');
+const { getMessages, sendMessage } = require('../controllers/chatController');
 
 router.post('/register', register);
 router.post('/login', login);
@@ -16,6 +17,8 @@ router.get('/orders', customerAuth, getMyOrders);
 router.get('/orders/:orderId', customerAuth, getOrderById);
 router.put('/orders/:orderId/cancel', customerAuth, cancelOrder);
 router.post('/orders/:orderId/review', customerAuth, reviewOrder);
+router.get('/orders/:orderId/messages', customerAuth, getMessages);
+router.post('/orders/:orderId/messages', customerAuth, sendMessage);
 router.post('/orders/:orderId/payment/create', customerAuth, createPayment);
 router.post('/orders/:orderId/payment/verify', customerAuth, verifyPayment);
 

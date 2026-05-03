@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -10,6 +12,17 @@ const supplierRoutes = require('./routes/supplierRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 
 const app = express();
+const httpServer = http.createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+  },
+});
+
+// Make io available in controllers via req.app.get('io')
+app.set('io', io);
 
 connectDB();
 
@@ -19,7 +32,7 @@ app.use(express.json());
 
 // Rate limiters
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
+  windowMs: 15 * 60 * 1000,
   max: 20,
   message: { message: 'Too many attempts, please try again after 15 minutes' },
   standardHeaders: true,
@@ -27,7 +40,7 @@ const authLimiter = rateLimit({
 });
 
 const orderLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 10,
   message: { message: 'Order request limit reached, please try again later' },
   standardHeaders: true,
@@ -48,5 +61,25 @@ app.use('/api/customer', customerRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/config', (req, res) => res.json({ supportPhone: process.env.SUPPORT_PHONE || '919876543210' }));
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  socket.on('join:admin', () => socket.join('admin'));
+
+  socket.on('join:order', (orderId) => {
+    if (orderId) socket.join(`order:${orderId}`);
+  });
+
+  socket.on('leave:order', (orderId) => {
+    if (orderId) socket.leave(`order:${orderId}`);
+  });
+
+  // Supplier joins their personal room for assignment notifications
+  socket.on('join:supplier', (supplierId) => {
+    if (supplierId) socket.join(`supplier:${supplierId}`);
+  });
+
+  socket.on('disconnect', () => {});
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -7,6 +7,7 @@ const {
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
 } = require('../controllers/adminController');
+const { getMessages, sendMessage } = require('../controllers/chatController');
 
 const router = express.Router();
 
@@ -23,6 +24,8 @@ router.get('/notifications', protect, getNotifications);
 router.get('/orders', protect, getOrders);
 router.get('/orders/export', protect, exportOrders);
 router.get('/orders/:orderId', protect, getOrderById);
+router.get('/orders/:orderId/messages', protect, getMessages);
+router.post('/orders/:orderId/messages', protect, sendMessage);
 router.put('/orders/:orderId/status', protect, updateStatus);
 router.put('/orders/:orderId/quote', protect, sendQuote);
 router.put('/orders/:orderId/assign-supplier', protect, assignSupplier);
