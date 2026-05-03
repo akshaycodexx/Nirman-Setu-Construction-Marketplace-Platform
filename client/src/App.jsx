@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { SupplierProvider, useSupplier } from './context/SupplierContext';
 import { CustomerProvider, useCustomer } from './context/CustomerContext';
+import { SocketProvider } from './context/SocketContext';
 
 // Public pages
 import Home from './pages/Home';
@@ -80,6 +81,7 @@ function PublicCustomerGuard({ children }) {
 
 export default function App() {
   return (
+    <SocketProvider>
     <AdminProvider>
       <SupplierProvider>
         <CustomerProvider>
@@ -128,5 +130,6 @@ export default function App() {
         </CustomerProvider>
       </SupplierProvider>
     </AdminProvider>
+    </SocketProvider>
   );
 }

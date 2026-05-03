@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Order = require('../models/Order');
 const { sendAdminNotification } = require('../utils/mailer');
+const { notifyNewOrder } = require('../utils/whatsapp');
 
 const createOrder = async (req, res) => {
   try {
@@ -27,6 +28,21 @@ const createOrder = async (req, res) => {
     sendAdminNotification(order).catch(err =>
       console.error('Email notification failed:', err.message)
     );
+
+    // WhatsApp confirmation to customer
+    notifyNewOrder(order);
+
+    // Real-time alert to admin panel
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin').emit('order:new', {
+        orderId: order.orderId,
+        customerName: order.customer?.name,
+        category: order.category,
+        city: order.delivery?.city,
+        createdAt: order.createdAt,
+      });
+    }
 
     res.status(201).json({
       success: true,
