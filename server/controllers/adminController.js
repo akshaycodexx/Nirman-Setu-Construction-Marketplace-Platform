@@ -428,10 +428,12 @@ const markSupplierPayout = async (req, res) => {
   try {
     const { amount, note } = req.body;
     if (!amount || Number(amount) <= 0) return res.status(400).json({ message: 'Valid amount required' });
-    const order = await Order.findOne({ orderId: req.params.orderId });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      { $set: { supplierPayout: { status: 'paid', amount: Number(amount), paidAt: new Date(), note: note || '' } } },
+      { new: true, runValidators: false }
+    );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    order.supplierPayout = { status: 'paid', amount: Number(amount), paidAt: new Date(), note: note || '' };
-    await order.save();
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });

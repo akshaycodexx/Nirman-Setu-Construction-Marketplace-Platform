@@ -143,12 +143,15 @@ exports.reviewOrder = async (req, res) => {
     const { rating, comment } = req.body;
     const r = Number(rating);
     if (!r || r < 1 || r > 5) return res.status(400).json({ message: 'Rating must be 1–5' });
-    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    if (order.status !== 'delivered') return res.status(400).json({ message: 'Only delivered orders can be reviewed' });
-    if (order.review?.rating) return res.status(400).json({ message: 'Already reviewed' });
-    order.review = { rating: r, comment: comment || '', reviewedAt: new Date() };
-    await order.save();
+    const existing = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('status review');
+    if (!existing) return res.status(404).json({ message: 'Order not found' });
+    if (existing.status !== 'delivered') return res.status(400).json({ message: 'Only delivered orders can be reviewed' });
+    if (existing.review?.rating) return res.status(400).json({ message: 'Already reviewed' });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, customerId: req.customer._id },
+      { $set: { review: { rating: r, comment: comment || '', reviewedAt: new Date() } } },
+      { new: true, runValidators: false }
+    );
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ message: err.message });
