@@ -85,23 +85,30 @@ const updateOrderStatus = async (req, res) => {
     if (!allowed.includes(status))
       return res.status(400).json({ success: false, message: 'Supplier can only set dispatched or delivered' });
 
-    const order = await Order.findOne({
-      orderId: req.params.orderId,
-      supplierId: req.supplier._id,
-    });
-    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    const existing = await Order.findOne({ orderId: req.params.orderId, supplierId: req.supplier._id }).select('status');
+    if (!existing) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    // Only allow forward movement
     const flow = ['confirmed', 'dispatched', 'delivered'];
-    const currentIdx = flow.indexOf(order.status);
-    const newIdx = flow.indexOf(status);
-    if (newIdx <= currentIdx)
+    if (flow.indexOf(status) <= flow.indexOf(existing.status))
       return res.status(400).json({ success: false, message: 'Invalid status transition' });
 
-    order.status = status;
-    if (supplierNote) order.supplierNote = supplierNote;
-    order.timeline.push({ status, note: supplierNote || '', by: 'supplier' });
-    await order.save();
+    const setFields = { status };
+    if (supplierNote) setFields.supplierNote = supplierNote;
+
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, supplierId: req.supplier._id },
+      {
+        $set: setFields,
+        $push: { timeline: { status, note: supplierNote || '', by: 'supplier', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: order.status });
+      io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+    }
 
     res.json({ success: true, order });
   } catch (err) {

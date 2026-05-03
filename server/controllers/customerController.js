@@ -97,12 +97,17 @@ exports.getOrderById = async (req, res) => {
 // PUT /api/customer/orders/:orderId/cancel
 exports.cancelOrder = async (req, res) => {
   try {
-    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    if (order.status !== 'pending') return res.status(400).json({ message: 'Only pending orders can be cancelled' });
-    order.status = 'cancelled';
-    order.timeline.push({ status: 'cancelled', note: 'Cancelled by customer', by: 'customer' });
-    await order.save();
+    const existing = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('status');
+    if (!existing) return res.status(404).json({ message: 'Order not found' });
+    if (existing.status !== 'pending') return res.status(400).json({ message: 'Only pending orders can be cancelled' });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, customerId: req.customer._id },
+      {
+        $set: { status: 'cancelled' },
+        $push: { timeline: { status: 'cancelled', note: 'Cancelled by customer', by: 'customer', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
     res.json({ message: 'Order cancelled', order });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -121,9 +126,11 @@ exports.createPayment = async (req, res) => {
     const advanceAmount = Math.ceil(order.quote.amount * 0.3);
     const rzpOrder = await createRazorpayOrder(advanceAmount, order.orderId);
 
-    order.payment.razorpayOrderId = rzpOrder.id;
-    order.payment.advanceAmount = advanceAmount;
-    await order.save();
+    await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      { $set: { 'payment.razorpayOrderId': rzpOrder.id, 'payment.advanceAmount': advanceAmount } },
+      { runValidators: false }
+    );
 
     res.json({
       razorpayOrderId: rzpOrder.id,
@@ -182,19 +189,27 @@ exports.reviewOrder = async (req, res) => {
 exports.verifyPayment = async (req, res) => {
   try {
     const { razorpayPaymentId, razorpaySignature } = req.body;
-    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const existing = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('payment.razorpayOrderId');
+    if (!existing) return res.status(404).json({ message: 'Order not found' });
 
-    const valid = verifySignature(order.payment.razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    const valid = verifySignature(existing.payment.razorpayOrderId, razorpayPaymentId, razorpaySignature);
     if (!valid) return res.status(400).json({ message: 'Payment verification failed' });
 
-    order.payment.status = 'advance_paid';
-    order.payment.razorpayPaymentId = razorpayPaymentId;
-    order.payment.razorpaySignature = razorpaySignature;
-    order.payment.advancePaidAt = new Date();
-    order.status = 'confirmed';
-    order.timeline.push({ status: 'confirmed', note: 'Advance payment received', by: 'customer' });
-    await order.save();
+    const now = new Date();
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, customerId: req.customer._id },
+      {
+        $set: {
+          status: 'confirmed',
+          'payment.status': 'advance_paid',
+          'payment.razorpayPaymentId': razorpayPaymentId,
+          'payment.razorpaySignature': razorpaySignature,
+          'payment.advancePaidAt': now,
+        },
+        $push: { timeline: { status: 'confirmed', note: 'Advance payment received', by: 'customer', at: now } },
+      },
+      { new: true, runValidators: false }
+    );
 
     sendPaymentConfirmation(order).catch(e => console.error('Payment email failed:', e.message));
 

@@ -148,17 +148,20 @@ const updateStatus = async (req, res) => {
     if (!validStatuses.includes(status))
       return res.status(400).json({ success: false, message: 'Invalid status' });
 
-    const order = await Order.findOne({ orderId: req.params.orderId });
+    const setFields = { status };
+    if (adminNote !== undefined) setFields.adminNote = adminNote;
+
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      {
+        $set: setFields,
+        $push: { timeline: { status, note: adminNote || '', by: 'admin', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    order.status = status;
-    if (adminNote !== undefined) order.adminNote = adminNote;
-    order.timeline.push({ status, note: adminNote || '', by: 'admin' });
-    await order.save();
-
     sendStatusNotification(order).catch(e => console.error('Status email failed:', e.message));
-
-    // Auto WhatsApp to customer
     notifyStatusUpdate(order);
 
     const io = req.app.get('io');
@@ -219,18 +222,18 @@ const assignSupplier = async (req, res) => {
     const supplier = await Supplier.findById(supplierId);
     if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-    const order = await Order.findOne({ orderId: req.params.orderId });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      {
+        $set: { supplierId, status: 'confirmed' },
+        $push: { timeline: { status: 'confirmed', note: 'Supplier assigned', by: 'admin', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-    order.supplierId = supplierId;
-    order.status = 'confirmed';
-    order.timeline.push({ status: 'confirmed', note: 'Supplier assigned', by: 'admin' });
-    await order.save();
     await order.populate('supplierId', 'name phone businessName');
 
     sendSupplierAssignment(order, supplier).catch(e => console.error('Supplier email failed:', e.message));
-
-    // Auto WhatsApp to customer (confirmed) + supplier (assignment)
     notifyStatusUpdate(order);
     notifySupplierAssigned(order, supplier);
 
@@ -254,13 +257,15 @@ const assignSupplier = async (req, res) => {
 // PUT /api/admin/orders/:orderId/payment
 const markFullyPaid = async (req, res) => {
   try {
-    const order = await Order.findOne({ orderId: req.params.orderId });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      {
+        $set: { 'payment.status': 'fully_paid' },
+        $push: { timeline: { status: 'delivered', note: 'Marked as fully paid by admin', by: 'admin', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-    order.payment.status = 'fully_paid';
-    order.timeline.push({ status: order.status, note: 'Marked as fully paid by admin', by: 'admin' });
-    await order.save();
-
     res.json({ success: true, order });
   } catch (err) {
     console.error('markFullyPaid error:', err);

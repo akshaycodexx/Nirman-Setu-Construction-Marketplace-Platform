@@ -21,7 +21,7 @@ export default function SupplierLayout({ children }) {
   useEffect(() => {
     const socket = socketRef?.current;
     if (!socket || !supplier?._id) return;
-    socket.emit('join:supplier', supplier._id);
+    socket.emit('join:supplier', supplier._id || supplier.id);
     const handler = (data) => {
       toast.custom((t) => (
         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex items-start gap-3 bg-white border border-emerald-200 shadow-lg rounded-2xl px-4 py-3 max-w-sm`}>

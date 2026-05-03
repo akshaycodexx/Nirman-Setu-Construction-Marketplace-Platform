@@ -39,6 +39,8 @@ export default function ChatPanel({ orderId, role, authHeaders }) {
     const socket = socketRef?.current;
     if (!socket) return;
 
+    socket.emit('join:order', orderId);
+
     const handler = (msg) => {
       if (msg.orderId === orderId) {
         setMessages(prev =>
@@ -47,7 +49,10 @@ export default function ChatPanel({ orderId, role, authHeaders }) {
       }
     };
     socket.on('chat:message', handler);
-    return () => socket.off('chat:message', handler);
+    return () => {
+      socket.off('chat:message', handler);
+      socket.emit('leave:order', orderId);
+    };
   }, [orderId]);
 
   useEffect(() => {
