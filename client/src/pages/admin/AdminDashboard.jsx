@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag
 } from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const socketRef = useSocket();
 
   useEffect(() => {
     axios.get('/api/admin/dashboard')
@@ -18,9 +21,40 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Real-time: join admin room + listen for new orders
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+
+    socket.emit('join:admin');
+
+    const handleNewOrder = (order) => {
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex items-start gap-3 bg-white border border-orange-200 shadow-lg rounded-2xl px-4 py-3 max-w-sm`}>
+          <Bell className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Naya Order! 🔔</p>
+            <p className="text-xs text-gray-600 mt-0.5">{order.customerName} — {order.category} ({order.city})</p>
+            <Link to={`/admin/orders/${order.orderId}`} onClick={() => toast.dismiss(t.id)}
+              className="text-xs text-orange-600 font-semibold mt-1 inline-block hover:underline">
+              {order.orderId} dekho →
+            </Link>
+          </div>
+        </div>
+      ), { duration: 8000 });
+
+      // Refresh dashboard stats
+      axios.get('/api/admin/dashboard').then(r => setData(r.data)).catch(() => {});
+    };
+
+    socket.on('order:new', handleNewOrder);
+    return () => socket.off('order:new', handleNewOrder);
+  }, [socketRef]);
+
   const s = data?.stats || {};
   const r = data?.revenue || {};
   const p = data?.payable || {};
+  const openComplaints = data?.openComplaints || 0;
 
   return (
     <AdminLayout>
@@ -28,6 +62,16 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">Nirman Setu — Overview</p>
       </div>
+
+      {/* Complaints alert */}
+      {!loading && openComplaints > 0 && (
+        <Link to="/admin/orders?complaints=open"
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3 mb-5 hover:bg-red-100 transition-colors">
+          <Flag className="w-4 h-4 text-red-500 shrink-0" />
+          <span className="text-sm font-semibold text-red-700">{openComplaints} open complaint{openComplaints > 1 ? 's' : ''} — turant dhyan dein</span>
+          <ArrowRight className="w-4 h-4 text-red-400 ml-auto shrink-0" />
+        </Link>
+      )}
 
       {/* Revenue cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">

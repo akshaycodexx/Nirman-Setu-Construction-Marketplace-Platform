@@ -4,7 +4,7 @@ const customerAuth = require('../middleware/customerAuth');
 const {
   register, login, getMe, updateProfile,
   getMyOrders, getOrderById, cancelOrder,
-  reviewOrder,
+  reviewOrder, raiseComplaint,
   createPayment, verifyPayment,
 } = require('../controllers/customerController');
 const { getMessages, sendMessage } = require('../controllers/chatController');
@@ -17,6 +17,7 @@ router.get('/orders', customerAuth, getMyOrders);
 router.get('/orders/:orderId', customerAuth, getOrderById);
 router.put('/orders/:orderId/cancel', customerAuth, cancelOrder);
 router.post('/orders/:orderId/review', customerAuth, reviewOrder);
+router.post('/orders/:orderId/complaint', customerAuth, raiseComplaint);
 router.get('/orders/:orderId/messages', customerAuth, getMessages);
 router.post('/orders/:orderId/messages', customerAuth, sendMessage);
 router.post('/orders/:orderId/payment/create', customerAuth, createPayment);

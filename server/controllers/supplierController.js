@@ -114,19 +114,36 @@ const updateOrderStatus = async (req, res) => {
 const getDashboard = async (req, res) => {
   try {
     const sid = req.supplier._id;
-    const [total, confirmed, dispatched, delivered] = await Promise.all([
+    const [total, confirmed, dispatched, delivered, ratingResult, earningResult] = await Promise.all([
       Order.countDocuments({ supplierId: sid }),
       Order.countDocuments({ supplierId: sid, status: 'confirmed' }),
       Order.countDocuments({ supplierId: sid, status: 'dispatched' }),
       Order.countDocuments({ supplierId: sid, status: 'delivered' }),
+      Order.aggregate([
+        { $match: { supplierId: sid, 'review.rating': { $exists: true, $ne: null } } },
+        { $group: { _id: null, avg: { $avg: '$review.rating' }, count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: { supplierId: sid, 'supplierPayout.status': 'paid' } },
+        { $group: { _id: null, total: { $sum: '$supplierPayout.amount' } } },
+      ]),
     ]);
+
+    const avgRating = ratingResult[0]?.avg ? +(ratingResult[0].avg.toFixed(1)) : null;
+    const ratingCount = ratingResult[0]?.count || 0;
+    const earnings = earningResult[0]?.total || 0;
 
     const recent = await Order.find({ supplierId: sid })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('orderId status category delivery.city delivery.date createdAt');
 
-    res.json({ success: true, stats: { total, confirmed, dispatched, delivered }, recent });
+    res.json({
+      success: true,
+      stats: { total, confirmed, dispatched, delivered },
+      performance: { avgRating, ratingCount, earnings },
+      recent,
+    });
   } catch (err) {
     console.error('supplier getDashboard error:', err);
     res.status(500).json({ success: false, message: 'Server error' });

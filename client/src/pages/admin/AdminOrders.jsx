@@ -8,7 +8,7 @@ const PAYMENT_BADGE = {
   fully_paid: 'bg-green-100 text-green-700',
 };
 
-import { ClipboardList, Search, ArrowRight, RefreshCw, Download } from 'lucide-react';
+import { ClipboardList, Search, ArrowRight, RefreshCw, Download, Flag } from 'lucide-react';
 
 const STATUSES = ['all', 'pending', 'quoted', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
 const CATEGORIES = ['all', 'material', 'transport', 'equipment'];
@@ -22,6 +22,7 @@ export default function AdminOrders() {
   const status = params.get('status') || 'all';
   const category = params.get('category') || 'all';
   const search = params.get('search') || '';
+  const complaints = params.get('complaints') || '';
   const page = Number(params.get('page') || 1);
 
   const fetchOrders = useCallback(async () => {
@@ -30,6 +31,7 @@ export default function AdminOrders() {
       const q = new URLSearchParams();
       if (status !== 'all') q.set('status', status);
       if (category !== 'all') q.set('category', category);
+      if (complaints) q.set('complaints', complaints);
       if (search) q.set('search', search);
       q.set('page', page);
       q.set('limit', 20);
@@ -38,7 +40,7 @@ export default function AdminOrders() {
       setTotal(data.total);
     } catch {}
     setLoading(false);
-  }, [status, category, search, page]);
+  }, [status, category, search, complaints, page]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -108,9 +110,9 @@ export default function AdminOrders() {
           {STATUSES.map(s => (
             <button
               key={s}
-              onClick={() => setFilter('status', s)}
+              onClick={() => { setFilter('status', s); const next = new URLSearchParams(params); next.delete('complaints'); setParams(next); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                status === s
+                status === s && !complaints
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -118,6 +120,16 @@ export default function AdminOrders() {
               {s}
             </button>
           ))}
+          <button
+            onClick={() => { const next = new URLSearchParams(params); next.set('complaints', complaints === 'open' ? '' : 'open'); next.set('page', '1'); setParams(next); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors ${
+              complaints === 'open'
+                ? 'bg-red-500 text-white'
+                : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+            }`}
+          >
+            <Flag className="w-3 h-3" /> Complaints
+          </button>
         </div>
 
         {/* Category */}
@@ -184,12 +196,15 @@ export default function AdminOrders() {
                   <div className="hidden sm:block col-span-2">
                     <span className="text-sm text-gray-600">{order.delivery?.city}</span>
                   </div>
-                  <div className="col-span-5 sm:col-span-2 flex justify-end sm:justify-start flex-wrap gap-1">
+                  <div className="col-span-5 sm:col-span-2 flex justify-end sm:justify-start flex-wrap gap-1 items-center">
                     <StatusBadge status={order.status} />
                     {PAYMENT_BADGE[order.payment?.status] && (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PAYMENT_BADGE[order.payment.status]}`}>
                         {order.payment.status === 'advance_paid' ? 'Advance' : 'Paid'}
                       </span>
+                    )}
+                    {order.complaint?.text && order.complaint?.status === 'open' && (
+                      <span title="Open complaint" className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
                     )}
                   </div>
                   <div className="hidden sm:flex col-span-1 items-center justify-between gap-1">

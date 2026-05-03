@@ -62,6 +62,13 @@ const orderSchema = new mongoose.Schema({
     paidAt: { type: Date },
     note: { type: String },
   },
+  complaint: {
+    text: { type: String },
+    raisedAt: { type: Date },
+    status: { type: String, default: 'open' },
+    resolution: { type: String },
+    resolvedAt: { type: Date },
+  },
   timeline: [{
     status: String,
     note: String,

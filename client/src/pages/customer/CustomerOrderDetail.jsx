@@ -6,7 +6,7 @@ import { useCustomer } from '../../context/CustomerContext';
 import { useSocket } from '../../context/SocketContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
 import ChatPanel from '../../components/ChatPanel';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star, Flag } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -30,10 +30,31 @@ export default function CustomerOrderDetail() {
   const [paying, setPaying] = useState(false);
 
   const [cancelling, setCancelling] = useState(false);
+  const [complaintText, setComplaintText] = useState('');
+  const [submittingComplaint, setSubmittingComplaint] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewHover, setReviewHover] = useState(0);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleComplaint = async () => {
+    if (!complaintText.trim()) { toast.error('Complaint likhein'); return; }
+    setSubmittingComplaint(true);
+    try {
+      const { data } = await axios.post(
+        `/api/customer/orders/${orderId}/complaint`,
+        { text: complaintText },
+        { headers: authHeader() }
+      );
+      setOrder(data.order);
+      setComplaintText('');
+      toast.success('Complaint submit ho gayi. Hum jald hi contact karenge.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Complaint failed');
+    } finally {
+      setSubmittingComplaint(false);
+    }
+  };
 
   const handleReview = async () => {
     if (!reviewRating) { toast.error('Rating select karo'); return; }
@@ -301,6 +322,50 @@ export default function CustomerOrderDetail() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Your Notes</h2>
             <p className="text-gray-600 text-sm">{order.notes}</p>
+          </div>
+        )}
+
+        {/* Complaint Section */}
+        {!['pending', 'cancelled'].includes(order.status) && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            {order.complaint?.text ? (
+              <>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Flag className={`w-4 h-4 ${order.complaint.status === 'resolved' ? 'text-green-500' : 'text-red-500'}`} />
+                  Complaint
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-1 ${order.complaint.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {order.complaint.status === 'resolved' ? 'Resolved' : 'Open'}
+                  </span>
+                </h2>
+                <p className="text-sm text-gray-700 bg-red-50 rounded-xl p-3 mb-2">"{order.complaint.text}"</p>
+                <p className="text-xs text-gray-400">{new Date(order.complaint.raisedAt).toLocaleDateString('en-IN')}</p>
+                {order.complaint.resolution && (
+                  <div className="mt-3 bg-green-50 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-green-700 mb-1">Admin Response:</p>
+                    <p className="text-sm text-green-800">{order.complaint.resolution}</p>
+                    <p className="text-xs text-green-600 mt-1">{new Date(order.complaint.resolvedAt).toLocaleDateString('en-IN')}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-gray-400" /> Koi Problem Hai?
+                </h2>
+                <textarea
+                  value={complaintText}
+                  onChange={e => setComplaintText(e.target.value)}
+                  placeholder="Problem batao — delivery issue, quality issue, ya kuch aur..."
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-3"
+                />
+                <button onClick={handleComplaint} disabled={!complaintText.trim() || submittingComplaint}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                  {submittingComplaint ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
+                  Raise Complaint
+                </button>
+              </>
+            )}
           </div>
         )}
 

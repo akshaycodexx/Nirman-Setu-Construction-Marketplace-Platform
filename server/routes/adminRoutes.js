@@ -3,7 +3,7 @@ const { protect } = require('../middleware/auth');
 const {
   login, getMe, getDashboard,
   getOrders, getOrderById, exportOrders, updateStatus, sendQuote, assignSupplier, markFullyPaid,
-  getNotifications, markSupplierPayout,
+  getNotifications, markSupplierPayout, resolveComplaint,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
 } = require('../controllers/adminController');
@@ -31,6 +31,7 @@ router.put('/orders/:orderId/quote', protect, sendQuote);
 router.put('/orders/:orderId/assign-supplier', protect, assignSupplier);
 router.put('/orders/:orderId/payment', protect, markFullyPaid);
 router.patch('/orders/:orderId/supplier-payout', protect, markSupplierPayout);
+router.put('/orders/:orderId/complaint/resolve', protect, resolveComplaint);
 
 // Suppliers
 router.get('/suppliers', protect, getSuppliers);

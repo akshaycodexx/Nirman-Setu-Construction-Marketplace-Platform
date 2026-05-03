@@ -137,6 +137,26 @@ exports.createPayment = async (req, res) => {
   }
 };
 
+// POST /api/customer/orders/:orderId/complaint
+exports.raiseComplaint = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text?.trim()) return res.status(400).json({ message: 'Complaint text required' });
+    const existing = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('status complaint');
+    if (!existing) return res.status(404).json({ message: 'Order not found' });
+    if (['pending', 'cancelled'].includes(existing.status)) return res.status(400).json({ message: 'Cannot raise complaint on pending or cancelled orders' });
+    if (existing.complaint?.text) return res.status(400).json({ message: 'Complaint already raised' });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, customerId: req.customer._id },
+      { $set: { complaint: { text: text.trim(), raisedAt: new Date(), status: 'open' } } },
+      { new: true, runValidators: false }
+    );
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/customer/orders/:orderId/review
 exports.reviewOrder = async (req, res) => {
   try {

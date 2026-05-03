@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
-import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee } from 'lucide-react';
 
 const STATUS_COLORS = {
   confirmed: 'bg-indigo-100 text-indigo-700',
@@ -43,6 +43,7 @@ export default function SupplierDashboard() {
     { key: 'dispatched', label: 'In Transit', icon: Truck, color: 'bg-orange-50 text-orange-700' },
     { key: 'delivered', label: 'Delivered', icon: CheckCircle, color: 'bg-green-50 text-green-700' },
   ];
+  const perf = data?.performance || {};
 
   return (
     <SupplierLayout>
@@ -72,7 +73,7 @@ export default function SupplierDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {stats.map(s => (
           <div key={s.key} className={`rounded-2xl p-4 border border-gray-100 ${s.color}`}>
             <s.icon className="w-5 h-5 mb-2 opacity-70" />
@@ -80,6 +81,30 @@ export default function SupplierDashboard() {
             <p className="text-xs font-medium opacity-70 mt-0.5">{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Performance */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="rounded-2xl p-4 border border-yellow-100 bg-yellow-50">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
+            <span className="text-xs font-medium text-yellow-700">Avg Rating</span>
+          </div>
+          <p className="text-2xl font-black text-yellow-800">
+            {loading ? '—' : perf.avgRating != null ? `${perf.avgRating}/5` : 'N/A'}
+          </p>
+          <p className="text-xs text-yellow-600 mt-0.5">{loading ? '' : perf.ratingCount ? `${perf.ratingCount} review${perf.ratingCount !== 1 ? 's' : ''}` : 'No reviews yet'}</p>
+        </div>
+        <div className="rounded-2xl p-4 border border-green-100 bg-green-50">
+          <div className="flex items-center gap-1.5 mb-2">
+            <IndianRupee className="w-4 h-4 text-green-600" />
+            <span className="text-xs font-medium text-green-700">Total Earnings</span>
+          </div>
+          <p className="text-2xl font-black text-green-800">
+            {loading ? '—' : perf.earnings ? `₹${perf.earnings.toLocaleString('en-IN')}` : '₹0'}
+          </p>
+          <p className="text-xs text-green-600 mt-0.5">Paid payouts</p>
+        </div>
       </div>
 
       {/* Recent orders */}

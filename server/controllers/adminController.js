@@ -70,18 +70,22 @@ const getDashboard = async (req, res) => {
       .limit(8)
       .select('orderId status category customer.name delivery.city createdAt quote.amount payment.status');
 
-    // Outstanding supplier payouts: orders paid by customer but supplier not paid yet
+    // Outstanding supplier payouts
     const payableResult = await Order.aggregate([
       { $match: { 'payment.status': { $in: ['advance_paid', 'fully_paid'] }, supplierId: { $ne: null }, 'supplierPayout.status': 'pending' } },
       { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$payment.advanceAmount' } } },
     ]);
     const payableSummary = payableResult[0] || { count: 0, total: 0 };
 
+    // Open complaints
+    const openComplaints = await Order.countDocuments({ 'complaint.text': { $exists: true }, 'complaint.status': 'open' });
+
     res.json({
       success: true,
       stats: { total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers },
       revenue: { advanceCollected, totalQuotedValue },
       payable: { count: payableSummary.count, total: payableSummary.total },
+      openComplaints,
       recent,
     });
   } catch (err) {
@@ -93,10 +97,14 @@ const getDashboard = async (req, res) => {
 // GET /api/admin/orders
 const getOrders = async (req, res) => {
   try {
-    const { status, category, search, page = 1, limit = 20 } = req.query;
+    const { status, category, search, complaints, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (status && status !== 'all') filter.status = status;
-    if (category) filter.category = category;
+    if (category && category !== 'all') filter.category = category;
+    if (complaints === 'open') {
+      filter['complaint.text'] = { $exists: true };
+      filter['complaint.status'] = 'open';
+    }
     if (search) {
       filter.$or = [
         { orderId: { $regex: search, $options: 'i' } },
@@ -472,10 +480,26 @@ const markSupplierPayout = async (req, res) => {
   }
 };
 
+// PUT /api/admin/orders/:orderId/complaint/resolve
+const resolveComplaint = async (req, res) => {
+  try {
+    const { resolution } = req.body;
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId },
+      { $set: { 'complaint.status': 'resolved', 'complaint.resolution': resolution || '', 'complaint.resolvedAt': new Date() } },
+      { new: true, runValidators: false }
+    );
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
   assignSupplier, markFullyPaid,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
-  getNotifications, markSupplierPayout,
+  getNotifications, markSupplierPayout, resolveComplaint,
 };

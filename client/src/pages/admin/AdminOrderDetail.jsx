@@ -7,7 +7,7 @@ import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
-  Star, IndianRupee, Wallet
+  Star, IndianRupee, Wallet, Flag
 } from 'lucide-react';
 
 const adminAuthHeader = () => {
@@ -234,6 +234,11 @@ export default function AdminOrderDetail() {
           {/* Support Chat */}
           <ChatPanel orderId={orderId} role="admin" authHeaders={adminAuthHeader} />
 
+          {/* Complaint */}
+          {order.complaint?.text && (
+            <ComplaintCard order={order} setOrder={setOrder} orderId={orderId} />
+          )}
+
           {/* Customer Review */}
           {order.review?.rating && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
@@ -374,6 +379,57 @@ export default function AdminOrderDetail() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+function ComplaintCard({ order, setOrder, orderId }) {
+  const [resolution, setResolution] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const isResolved = order.complaint?.status === 'resolved';
+
+  const handleResolve = async () => {
+    setResolving(true);
+    try {
+      const { data } = await axios.put(`/api/admin/orders/${orderId}/complaint/resolve`, { resolution });
+      setOrder(data.order);
+      toast.success('Complaint resolved!');
+    } catch { toast.error('Failed to resolve'); }
+    setResolving(false);
+  };
+
+  return (
+    <div className={`rounded-2xl border shadow-sm p-5 ${isResolved ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+      <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <Flag className={`w-4 h-4 ${isResolved ? 'text-green-500' : 'text-red-500'}`} />
+        Customer Complaint
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isResolved ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+          {isResolved ? 'Resolved' : 'Open'}
+        </span>
+      </h3>
+      <p className="text-sm text-gray-800 bg-white/60 rounded-xl p-3 mb-2">"{order.complaint.text}"</p>
+      <p className="text-xs text-gray-500 mb-3">Raised: {new Date(order.complaint.raisedAt).toLocaleString('en-IN')}</p>
+      {isResolved ? (
+        <div className="bg-green-100 rounded-xl p-3">
+          <p className="text-xs font-semibold text-green-700 mb-1">Resolution:</p>
+          <p className="text-sm text-green-800">{order.complaint.resolution || '(No text)'}</p>
+          <p className="text-xs text-green-600 mt-1">{new Date(order.complaint.resolvedAt).toLocaleString('en-IN')}</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <textarea
+            value={resolution}
+            onChange={e => setResolution(e.target.value)}
+            placeholder="Resolution note (e.g. Refund processed / Issue resolved via call)"
+            rows={2}
+            className="w-full border border-red-200 bg-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+          />
+          <button onClick={handleResolve} disabled={resolving}
+            className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+            {resolving ? <><Loader2 className="w-4 h-4 animate-spin" /> Resolving...</> : <><CheckCircle className="w-4 h-4" /> Mark Resolved</>}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
