@@ -86,7 +86,7 @@ export default function SupplierOrders() {
                     {order.items?.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(', ')}
                   </p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 flex-shrink-0" />
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 shrink-0" />
               </Link>
             ))}
           </div>

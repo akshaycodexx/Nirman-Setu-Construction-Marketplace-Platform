@@ -3,7 +3,8 @@ const { protect } = require('../middleware/auth');
 const {
   login, getMe, getDashboard,
   getOrders, getOrderById, exportOrders, updateStatus, sendQuote, assignSupplier, markFullyPaid,
-  getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
+  getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
+  resetSupplierPassword, changePassword,
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -11,6 +12,7 @@ const router = express.Router();
 // Auth
 router.post('/login', login);
 router.get('/me', protect, getMe);
+router.put('/change-password', protect, changePassword);
 
 // Dashboard
 router.get('/dashboard', protect, getDashboard);
@@ -27,7 +29,9 @@ router.put('/orders/:orderId/payment', protect, markFullyPaid);
 // Suppliers
 router.get('/suppliers', protect, getSuppliers);
 router.post('/suppliers', protect, createSupplier);
+router.get('/suppliers/:id', protect, getSupplierById);
 router.put('/suppliers/:id/kyc', protect, updateSupplierKyc);
 router.put('/suppliers/:id/toggle', protect, toggleSupplier);
+router.put('/suppliers/:id/reset-password', protect, resetSupplierPassword);
 
 module.exports = router;

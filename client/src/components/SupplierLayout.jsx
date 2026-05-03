@@ -46,7 +46,7 @@ export default function SupplierLayout({ children }) {
                 : 'text-gray-400 hover:bg-gray-800 hover:text-white'
             }`}
           >
-            <l.icon className="w-4 h-4 flex-shrink-0" />
+            <l.icon className="w-4 h-4 shrink-0" />
             {l.label}
           </Link>
         ))}
@@ -56,7 +56,7 @@ export default function SupplierLayout({ children }) {
         <div className="px-3 py-2 mb-2">
           <div className="flex items-center gap-1.5">
             <p className="text-white text-sm font-medium truncate">{supplier?.name}</p>
-            {supplier?.verifiedBadge && <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
+            {supplier?.verifiedBadge && <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
           </div>
           <p className="text-gray-500 text-xs truncate">{supplier?.phone}</p>
         </div>

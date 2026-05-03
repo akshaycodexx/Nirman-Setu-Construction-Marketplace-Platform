@@ -336,7 +336,70 @@ const toggleSupplier = async (req, res) => {
   }
 };
 
+// GET /api/admin/suppliers/:id
+const getSupplierById = async (req, res) => {
+  try {
+    const supplier = await Supplier.findById(req.params.id).select('-password');
+    if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
+
+    const [total, confirmed, dispatched, delivered] = await Promise.all([
+      Order.countDocuments({ supplierId: supplier._id }),
+      Order.countDocuments({ supplierId: supplier._id, status: 'confirmed' }),
+      Order.countDocuments({ supplierId: supplier._id, status: 'dispatched' }),
+      Order.countDocuments({ supplierId: supplier._id, status: 'delivered' }),
+    ]);
+
+    const recentOrders = await Order.find({ supplierId: supplier._id })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('orderId status category delivery.city delivery.date createdAt');
+
+    res.json({ success: true, supplier, stats: { total, confirmed, dispatched, delivered }, recentOrders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/admin/suppliers/:id/reset-password
+const resetSupplierPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6)
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
+    supplier.password = newPassword;
+    await supplier.save();
+    res.json({ success: true, message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/admin/change-password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ success: false, message: 'Both fields required' });
+    if (newPassword.length < 6)
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+
+    const admin = await Admin.findById(req.admin._id);
+    const valid = await admin.comparePassword(currentPassword);
+    if (!valid) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+
+    admin.password = newPassword;
+    await admin.save();
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
-  assignSupplier, markFullyPaid, getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
+  assignSupplier, markFullyPaid,
+  getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
+  resetSupplierPassword, changePassword,
 };

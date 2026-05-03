@@ -115,7 +115,7 @@ export default function SupplierDashboard() {
                   </div>
                   <p className="text-sm text-gray-500 capitalize">{order.category} &bull; {order.delivery?.city}</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 flex-shrink-0" />
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 shrink-0" />
               </Link>
             ))}
           </div>

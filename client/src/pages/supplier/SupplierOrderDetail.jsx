@@ -121,10 +121,10 @@ export default function SupplierOrderDetail() {
               <MapPin className="w-4 h-4 text-emerald-500" /> Delivery Info
             </h3>
             <div className="space-y-2 text-sm">
-              <div className="flex gap-2"><span className="text-gray-400 w-20 flex-shrink-0">Address</span><span className="text-gray-800 font-medium">{order.delivery?.address}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 flex-shrink-0">City</span><span className="text-gray-800 font-medium">{order.delivery?.city} {order.delivery?.pincode && `— ${order.delivery.pincode}`}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 flex-shrink-0">Date</span><span className="text-gray-800 font-medium">{new Date(order.delivery?.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 flex-shrink-0">Slot</span><span className="text-gray-800 font-medium capitalize">{order.delivery?.slot}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Address</span><span className="text-gray-800 font-medium">{order.delivery?.address}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">City</span><span className="text-gray-800 font-medium">{order.delivery?.city} {order.delivery?.pincode && `— ${order.delivery.pincode}`}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Date</span><span className="text-gray-800 font-medium">{new Date(order.delivery?.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Slot</span><span className="text-gray-800 font-medium capitalize">{order.delivery?.slot}</span></div>
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export default function SupplierOrderDetail() {
               <div className="space-y-3">
                 {order.timeline.map((t, i) => (
                   <div key={i} className="flex gap-3 text-sm">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full mt-1.5 flex-shrink-0" />
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full mt-1.5 shrink-0" />
                     <div>
                       <span className="font-medium capitalize text-gray-800">{t.status}</span>
                       {t.note && <span className="text-gray-500"> — {t.note}</span>}
@@ -160,7 +160,7 @@ export default function SupplierOrderDetail() {
                 return (
                   <div key={s.key} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${isDone ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-200'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-2 ${isDone ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-200'}`}>
                         <s.icon className={`w-3.5 h-3.5 ${isDone ? 'text-white' : 'text-gray-300'}`} />
                       </div>
                       {i < STATUS_STEPS.length - 1 && (

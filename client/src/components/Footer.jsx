@@ -21,15 +21,15 @@ export default function Footer() {
             </p>
             <div className="mt-4 space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                <Phone className="w-4 h-4 text-orange-400 shrink-0" />
                 <span>+91 00000 00000</span>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                <Mail className="w-4 h-4 text-orange-400 shrink-0" />
                 <span>support@nirmansetu.in</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
                 <span>Jharkhand, India</span>
               </div>
             </div>

@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useCustomer } from '../context/CustomerContext';
 import { Plus, Trash2, CheckCircle, ArrowLeft, ArrowRight, Loader2, User } from 'lucide-react';
+import WhatsAppButton from '../components/WhatsAppButton';
 
 const CATEGORIES = [
   { id: 'material', label: 'Construction Material', emoji: '🧱', desc: 'Cement, Balu, Gitti, Sariya' },
@@ -186,6 +187,7 @@ export default function RequestOrder() {
             </div>
           </div>
         </div>
+        <WhatsAppButton message="Nirman Setu pe order place karna chahta hoon, help chahiye" />
         <Footer />
       </div>
     );
@@ -241,7 +243,7 @@ export default function RequestOrder() {
                       <p className="text-sm text-gray-500">{cat.desc}</p>
                     </div>
                     {form.category === cat.id && (
-                      <CheckCircle className="w-5 h-5 text-orange-500 ml-auto flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-orange-500 ml-auto shrink-0" />
                     )}
                   </button>
                 ))}
@@ -507,6 +509,7 @@ export default function RequestOrder() {
         </div>
       </div>
 
+      <WhatsAppButton message="Nirman Setu pe order place karna chahta hoon, help chahiye" />
       <Footer />
     </div>
   );

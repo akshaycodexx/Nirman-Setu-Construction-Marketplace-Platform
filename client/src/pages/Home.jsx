@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import WhatsAppButton from '../components/WhatsAppButton';
 import { useCustomer } from '../context/CustomerContext';
 import {
   Package, Truck, Settings, Shield, Clock, Star,
@@ -265,6 +266,7 @@ export default function Home() {
       </section>
 
       <Footer />
+      <WhatsAppButton message="Hello! I need help with construction material/equipment order." />
     </div>
   );
 }

@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../context/AdminContext';
 import {
   LayoutDashboard, ClipboardList, LogOut,
-  HardHat, Menu, X, ChevronRight, Users
+  HardHat, Menu, X, ChevronRight, Users, Settings
 } from 'lucide-react';
 
 const navLinks = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
   { to: '/admin/suppliers', icon: Users, label: 'Suppliers' },
+  { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 
 const STATUS_COLORS = {

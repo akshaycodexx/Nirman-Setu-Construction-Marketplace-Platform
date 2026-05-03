@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import WhatsAppButton from '../components/WhatsAppButton';
 import { Search, Package, CheckCircle, Truck, Clock, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 const STATUS_STEPS = [
@@ -104,7 +105,7 @@ export default function TrackOrder() {
         {/* Error */}
         {error && !loading && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 shrink-0" />
             {error}
           </div>
         )}
@@ -139,7 +140,7 @@ export default function TrackOrder() {
                     return (
                       <div key={s.key} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all ${
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
                             isDone
                               ? 'bg-orange-500 border-orange-500'
                               : 'bg-white border-gray-200'
@@ -164,7 +165,7 @@ export default function TrackOrder() {
             {/* Cancelled */}
             {order.status === 'cancelled' && (
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
-                <XCircle className="w-5 h-5 flex-shrink-0" />
+                <XCircle className="w-5 h-5 shrink-0" />
                 <div>
                   <p className="font-semibold">Order Cancelled</p>
                   {order.adminNote && <p className="text-sm mt-0.5">{order.adminNote}</p>}
@@ -217,7 +218,7 @@ export default function TrackOrder() {
               </div>
               <a
                 href="tel:+910000000000"
-                className="flex-shrink-0 bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                className="shrink-0 bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
               >
                 Call Now
               </a>
@@ -235,6 +236,7 @@ export default function TrackOrder() {
         )}
       </div>
 
+      <WhatsAppButton message="Nirman Setu order track karne mein help chahiye" />
       <Footer />
     </div>
   );
