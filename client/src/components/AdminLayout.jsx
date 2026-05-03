@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAdmin } from '../context/AdminContext';
 import {
   LayoutDashboard, ClipboardList, LogOut,
-  HardHat, Menu, X, ChevronRight, Users, Settings
+  HardHat, Menu, X, ChevronRight, Users, Settings, Bell, IndianRupee
 } from 'lucide-react';
 
 const navLinks = [
@@ -35,6 +36,23 @@ export default function AdminLayout({ children }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifs, setNotifs] = useState({ newOrders: [], recentPayments: [], unread: 0 });
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    const fetch = () =>
+      axios.get('/api/admin/notifications').then(r => setNotifs(r.data)).catch(() => {});
+    fetch();
+    const id = setInterval(fetch, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
     logoutAdmin();
@@ -125,13 +143,71 @@ export default function AdminLayout({ children }) {
             <Menu className="w-5 h-5" />
           </button>
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-sm text-gray-500">
+          <nav className="flex items-center gap-1.5 text-sm text-gray-500 flex-1">
             <span>Admin</span>
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-gray-900 font-medium capitalize">
               {pathname.split('/').pop() || 'Dashboard'}
             </span>
           </nav>
+
+          {/* Notification Bell */}
+          <div className="relative" ref={notifRef}>
+            <button onClick={() => setNotifOpen(o => !o)}
+              className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+              <Bell className="w-5 h-5" />
+              {notifs.unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {notifs.unread > 9 ? '9+' : notifs.unread}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <p className="font-semibold text-gray-800 text-sm">Notifications</p>
+                  <span className="text-xs text-gray-400">Last 48 hrs</span>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifs.newOrders.length === 0 && notifs.recentPayments.length === 0 ? (
+                    <p className="text-center text-gray-400 text-sm py-8">Koi naya notification nahi</p>
+                  ) : (
+                    <>
+                      {notifs.newOrders.map(o => (
+                        <Link key={o._id} to={`/admin/orders/${o.orderId}`}
+                          onClick={() => setNotifOpen(false)}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
+                          <div className="w-7 h-7 bg-orange-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                            <Bell className="w-3.5 h-3.5 text-orange-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">New Order: {o.orderId}</p>
+                            <p className="text-xs text-gray-500">{o.customer?.name} · {o.category?.replace('_', ' ')}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{new Date(o.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </Link>
+                      ))}
+                      {notifs.recentPayments.map(o => (
+                        <Link key={o._id + 'p'} to={`/admin/orders/${o.orderId}`}
+                          onClick={() => setNotifOpen(false)}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
+                          <div className="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                            <IndianRupee className="w-3.5 h-3.5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">Payment: {o.orderId}</p>
+                            <p className="text-xs text-gray-500">{o.customer?.name} · ₹{o.payment?.advanceAmount?.toLocaleString('en-IN')}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{new Date(o.payment?.advancePaidAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Page content */}

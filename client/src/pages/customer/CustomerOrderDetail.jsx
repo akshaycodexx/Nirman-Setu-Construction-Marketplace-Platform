@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -27,6 +27,28 @@ export default function CustomerOrderDetail() {
   const [paying, setPaying] = useState(false);
 
   const [cancelling, setCancelling] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleReview = async () => {
+    if (!reviewRating) { toast.error('Rating select karo'); return; }
+    setSubmittingReview(true);
+    try {
+      const { data } = await axios.post(
+        `/api/customer/orders/${orderId}/review`,
+        { rating: reviewRating, comment: reviewComment },
+        { headers: authHeader() }
+      );
+      setOrder(data.order);
+      toast.success('Review dene ke liye shukriya!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Review failed');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const fetchOrder = () =>
     axios.get(`/api/customer/orders/${orderId}`, { headers: authHeader() })
@@ -256,6 +278,64 @@ export default function CustomerOrderDetail() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Your Notes</h2>
             <p className="text-gray-600 text-sm">{order.notes}</p>
+          </div>
+        )}
+
+        {/* Review Section */}
+        {order.status === 'delivered' && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            {order.review?.rating ? (
+              <>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> Aapka Review
+                </h2>
+                <div className="flex items-center gap-1 mb-2">
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} className={`w-5 h-5 ${s <= order.review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`} />
+                  ))}
+                  <span className="ml-2 text-sm font-semibold text-gray-700">{order.review.rating}/5</span>
+                </div>
+                {order.review.comment && <p className="text-sm text-gray-600 italic">"{order.review.comment}"</p>}
+                <p className="text-xs text-gray-400 mt-1">{new Date(order.review.reviewedAt).toLocaleDateString('en-IN')}</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-400" /> Rate Your Experience
+                </h2>
+                <div className="flex items-center gap-1 mb-4">
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s}
+                      onMouseEnter={() => setReviewHover(s)}
+                      onMouseLeave={() => setReviewHover(0)}
+                      onClick={() => setReviewRating(s)}
+                      className="p-0.5 transition-transform hover:scale-110">
+                      <Star className={`w-8 h-8 transition-colors ${
+                        s <= (reviewHover || reviewRating)
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-200 fill-gray-200'
+                      }`} />
+                    </button>
+                  ))}
+                  {reviewRating > 0 && (
+                    <span className="ml-2 text-sm font-medium text-gray-600">
+                      {['', 'Bahut Bura', 'Bura', 'Theek', 'Achha', 'Bahut Achha'][reviewRating]}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  value={reviewComment}
+                  onChange={e => setReviewComment(e.target.value)}
+                  placeholder="Experience batao... (optional)"
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none mb-3"
+                />
+                <button onClick={handleReview} disabled={!reviewRating || submittingReview}
+                  className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-200 disabled:text-gray-400 text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                  {submittingReview ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : <><Star className="w-4 h-4 fill-gray-900" /> Submit Review</>}
+                </button>
+              </>
+            )}
           </div>
         )}
 

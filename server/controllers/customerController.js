@@ -137,6 +137,24 @@ exports.createPayment = async (req, res) => {
   }
 };
 
+// POST /api/customer/orders/:orderId/review
+exports.reviewOrder = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const r = Number(rating);
+    if (!r || r < 1 || r > 5) return res.status(400).json({ message: 'Rating must be 1–5' });
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.status !== 'delivered') return res.status(400).json({ message: 'Only delivered orders can be reviewed' });
+    if (order.review?.rating) return res.status(400).json({ message: 'Already reviewed' });
+    order.review = { rating: r, comment: comment || '', reviewedAt: new Date() };
+    await order.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/customer/orders/:orderId/payment/verify
 exports.verifyPayment = async (req, res) => {
   try {

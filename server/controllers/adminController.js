@@ -69,10 +69,18 @@ const getDashboard = async (req, res) => {
       .limit(8)
       .select('orderId status category customer.name delivery.city createdAt quote.amount payment.status');
 
+    // Outstanding supplier payouts: orders paid by customer but supplier not paid yet
+    const payableResult = await Order.aggregate([
+      { $match: { 'payment.status': { $in: ['advance_paid', 'fully_paid'] }, supplierId: { $ne: null }, 'supplierPayout.status': 'pending' } },
+      { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$payment.advanceAmount' } } },
+    ]);
+    const payableSummary = payableResult[0] || { count: 0, total: 0 };
+
     res.json({
       success: true,
       stats: { total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers },
       revenue: { advanceCollected, totalQuotedValue },
+      payable: { count: payableSummary.count, total: payableSummary.total },
       recent,
     });
   } catch (err) {
@@ -397,9 +405,43 @@ const changePassword = async (req, res) => {
   }
 };
 
+// GET /api/admin/notifications
+const getNotifications = async (req, res) => {
+  try {
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const [newOrders, recentPayments] = await Promise.all([
+      Order.find({ status: 'pending', createdAt: { $gte: since } })
+        .sort({ createdAt: -1 }).limit(10)
+        .select('orderId customer.name category createdAt'),
+      Order.find({ 'payment.advancePaidAt': { $gte: since } })
+        .sort({ 'payment.advancePaidAt': -1 }).limit(10)
+        .select('orderId customer.name payment.status payment.advanceAmount payment.advancePaidAt'),
+    ]);
+    res.json({ success: true, newOrders, recentPayments, unread: newOrders.length + recentPayments.length });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PATCH /api/admin/orders/:orderId/supplier-payout
+const markSupplierPayout = async (req, res) => {
+  try {
+    const { amount, note } = req.body;
+    if (!amount || Number(amount) <= 0) return res.status(400).json({ message: 'Valid amount required' });
+    const order = await Order.findOne({ orderId: req.params.orderId });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    order.supplierPayout = { status: 'paid', amount: Number(amount), paidAt: new Date(), note: note || '' };
+    await order.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
   assignSupplier, markFullyPaid,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
+  getNotifications, markSupplierPayout,
 };

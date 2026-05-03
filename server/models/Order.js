@@ -59,6 +59,17 @@ const orderSchema = new mongoose.Schema({
     razorpayPaymentId: String,
     razorpaySignature: String,
   },
+  review: {
+    rating: { type: Number, min: 1, max: 5 },
+    comment: { type: String },
+    reviewedAt: { type: Date },
+  },
+  supplierPayout: {
+    status: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+    amount: { type: Number },
+    paidAt: { type: Date },
+    note: { type: String },
+  },
   timeline: [{
     status: String,
     note: String,

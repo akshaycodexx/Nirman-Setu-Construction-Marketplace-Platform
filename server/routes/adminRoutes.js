@@ -3,6 +3,7 @@ const { protect } = require('../middleware/auth');
 const {
   login, getMe, getDashboard,
   getOrders, getOrderById, exportOrders, updateStatus, sendQuote, assignSupplier, markFullyPaid,
+  getNotifications, markSupplierPayout,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
 } = require('../controllers/adminController');
@@ -16,6 +17,7 @@ router.put('/change-password', protect, changePassword);
 
 // Dashboard
 router.get('/dashboard', protect, getDashboard);
+router.get('/notifications', protect, getNotifications);
 
 // Orders
 router.get('/orders', protect, getOrders);
@@ -25,6 +27,7 @@ router.put('/orders/:orderId/status', protect, updateStatus);
 router.put('/orders/:orderId/quote', protect, sendQuote);
 router.put('/orders/:orderId/assign-supplier', protect, assignSupplier);
 router.put('/orders/:orderId/payment', protect, markFullyPaid);
+router.patch('/orders/:orderId/supplier-payout', protect, markSupplierPayout);
 
 // Suppliers
 router.get('/suppliers', protect, getSuppliers);

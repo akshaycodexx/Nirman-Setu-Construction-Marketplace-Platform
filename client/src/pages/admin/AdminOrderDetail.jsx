@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   ArrowLeft, Package, User, MapPin,
-  Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt
+  Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
+  Star, IndianRupee, Wallet
 } from 'lucide-react';
 
 const PAYMENT_LABELS = {
@@ -223,6 +224,23 @@ export default function AdminOrderDetail() {
 
           {/* Payment Status */}
           <PaymentCard order={order} setOrder={setOrder} orderId={orderId} />
+
+          {/* Customer Review */}
+          {order.review?.rating && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
+              <h3 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" /> Customer Review
+              </h3>
+              <div className="flex items-center gap-1 mb-2">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} className={`w-4 h-4 ${s <= order.review.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
+                ))}
+                <span className="ml-2 text-sm font-bold text-yellow-800">{order.review.rating}/5</span>
+              </div>
+              {order.review.comment && <p className="text-sm text-yellow-700 italic">"{order.review.comment}"</p>}
+              <p className="text-xs text-yellow-600 mt-1">{new Date(order.review.reviewedAt).toLocaleDateString('en-IN')}</p>
+            </div>
+          )}
         </div>
 
         {/* Right col — actions */}
@@ -340,9 +358,67 @@ export default function AdminOrderDetail() {
               )}
             </div>
           </div>
+          {/* Supplier Payout */}
+          {order.supplierId && (order.payment?.status === 'advance_paid' || order.payment?.status === 'fully_paid') && (
+            <SupplierPayoutCard order={order} setOrder={setOrder} orderId={orderId} />
+          )}
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+function SupplierPayoutCard({ order, setOrder, orderId }) {
+  const [amount, setAmount] = useState(order.supplierPayout?.amount || '');
+  const [note, setNote] = useState(order.supplierPayout?.note || '');
+  const [saving, setSaving] = useState(false);
+  const paid = order.supplierPayout?.status === 'paid';
+
+  const handlePayout = async () => {
+    if (!amount) { toast.error('Amount daalo'); return; }
+    setSaving(true);
+    try {
+      const { data } = await axios.patch(`/api/admin/orders/${orderId}/supplier-payout`, { amount, note });
+      setOrder(data.order);
+      toast.success('Supplier payout marked!');
+    } catch { toast.error('Failed'); }
+    setSaving(false);
+  };
+
+  return (
+    <div className={`rounded-2xl border shadow-sm p-5 ${paid ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
+      <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <Wallet className="w-4 h-4 text-orange-500" /> Supplier Payout
+      </h3>
+      {paid ? (
+        <div className="text-sm space-y-1">
+          <p className="flex items-center gap-1 text-green-700 font-semibold"><CheckCircle className="w-4 h-4" /> Paid</p>
+          <p className="text-green-800">Amount: <strong>₹{order.supplierPayout.amount?.toLocaleString('en-IN')}</strong></p>
+          <p className="text-green-700">Date: {new Date(order.supplierPayout.paidAt).toLocaleDateString('en-IN')}</p>
+          {order.supplierPayout.note && <p className="text-green-600 text-xs italic">{order.supplierPayout.note}</p>}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500">Supplier: <strong className="text-gray-800">{order.supplierId?.name}</strong></p>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Amount to Pay (₹)</label>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+              placeholder="e.g. 5000"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Note (optional)</label>
+            <input type="text" value={note} onChange={e => setNote(e.target.value)}
+              placeholder="UPI / NEFT reference..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+          </div>
+          <button onClick={handlePayout} disabled={saving || !amount}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+            {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><IndianRupee className="w-4 h-4" /> Mark Supplier Paid</>}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

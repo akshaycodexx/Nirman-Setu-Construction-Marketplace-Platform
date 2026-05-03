@@ -4,7 +4,7 @@ import axios from 'axios';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -20,6 +20,7 @@ export default function AdminDashboard() {
 
   const s = data?.stats || {};
   const r = data?.revenue || {};
+  const p = data?.payable || {};
 
   return (
     <AdminLayout>
@@ -29,7 +30,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Revenue cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
         <RevenueCard
           loading={loading}
           label="Advance Collected"
@@ -61,6 +62,15 @@ export default function AdminDashboard() {
           icon={Users}
           color="bg-blue-500"
           sub="Registered accounts"
+        />
+        <RevenueCard
+          loading={loading}
+          label="Supplier Payable"
+          value={p.total ? `₹${p.total.toLocaleString('en-IN')}` : '₹0'}
+          icon={Wallet}
+          color="bg-red-500"
+          sub={`${p.count ?? 0} orders pending`}
+          highlight={p.count > 0}
         />
       </div>
 
@@ -136,17 +146,17 @@ export default function AdminDashboard() {
   );
 }
 
-function RevenueCard({ loading, label, value, icon: Icon, color, sub }) {
+function RevenueCard({ loading, label, value, icon: Icon, color, sub, highlight }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+    <div className={`rounded-2xl border p-5 shadow-sm ${highlight ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-gray-500 text-xs font-medium">{label}</span>
+        <span className={`text-xs font-medium ${highlight ? 'text-red-600' : 'text-gray-500'}`}>{label}</span>
         <div className={`${color} p-1.5 rounded-lg`}>
           <Icon className="w-3.5 h-3.5 text-white" />
         </div>
       </div>
-      <p className="text-2xl font-black text-gray-900">{loading ? '—' : value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <p className={`text-2xl font-black ${highlight ? 'text-red-700' : 'text-gray-900'}`}>{loading ? '—' : value}</p>
+      <p className={`text-xs mt-1 ${highlight ? 'text-red-400' : 'text-gray-400'}`}>{sub}</p>
     </div>
   );
 }
