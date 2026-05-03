@@ -5,7 +5,14 @@ const { createOrder, trackOrder } = require('../controllers/orderController');
 const router = express.Router();
 
 const validateOrder = [
-  body('category').isIn(['material', 'transport', 'equipment']).withMessage('Invalid category'),
+  body('category').isIn([
+    'basic_materials', 'structural', 'wood_carpentry', 'chemicals',
+    'paint_finishing', 'flooring_tiling', 'doors_windows', 'interior_furniture',
+    'electrical', 'plumbing_sanitary', 'machinery', 'transport',
+    'labour', 'contractors', 'design_planning', 'shuttering',
+    'water_utilities', 'smart_features', 'complete_services',
+    'commercial', 'support_services',
+  ]).withMessage('Invalid category'),
   body('items').isArray({ min: 1 }).withMessage('At least one item required'),
   body('items.*.name').notEmpty().withMessage('Item name required'),
   body('items.*.quantity').isNumeric({ min: 1 }).withMessage('Valid quantity required'),

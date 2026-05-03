@@ -13,7 +13,14 @@ const orderSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['material', 'transport', 'equipment'],
+    enum: [
+      'basic_materials', 'structural', 'wood_carpentry', 'chemicals',
+      'paint_finishing', 'flooring_tiling', 'doors_windows', 'interior_furniture',
+      'electrical', 'plumbing_sanitary', 'machinery', 'transport',
+      'labour', 'contractors', 'design_planning', 'shuttering',
+      'water_utilities', 'smart_features', 'complete_services',
+      'commercial', 'support_services',
+    ],
     required: true,
   },
   items: [itemSchema],

@@ -16,7 +16,29 @@ function AddSupplierModal({ onClose, onAdded }) {
     categories: [], serviceAreas: '', notes: '',
   });
   const [loading, setLoading] = useState(false);
-  const CATS = ['material', 'transport', 'equipment'];
+  const CATS = [
+    { id: 'basic_materials', label: '🧱 Basic Materials' },
+    { id: 'structural', label: '🏗️ Structural' },
+    { id: 'wood_carpentry', label: '🪵 Wood & Carpentry' },
+    { id: 'chemicals', label: '🧪 Chemicals' },
+    { id: 'paint_finishing', label: '🎨 Paint & Finishing' },
+    { id: 'flooring_tiling', label: '🪟 Flooring & Tiling' },
+    { id: 'doors_windows', label: '🚪 Doors & Windows' },
+    { id: 'interior_furniture', label: '🛋️ Interior & Furniture' },
+    { id: 'electrical', label: '💡 Electrical' },
+    { id: 'plumbing_sanitary', label: '🚿 Plumbing & Sanitary' },
+    { id: 'machinery', label: '🚜 Machinery (Rental)' },
+    { id: 'transport', label: '🚚 Transport' },
+    { id: 'labour', label: '👷 Labour' },
+    { id: 'contractors', label: '🧑‍💼 Contractors' },
+    { id: 'design_planning', label: '📐 Design & Planning' },
+    { id: 'shuttering', label: '🔩 Shuttering' },
+    { id: 'water_utilities', label: '💧 Water & Utilities' },
+    { id: 'smart_features', label: '🔌 Smart Features' },
+    { id: 'complete_services', label: '🏡 Complete Services' },
+    { id: 'commercial', label: '🏢 Commercial' },
+    { id: 'support_services', label: '🧠 Support Services' },
+  ];
 
   const toggleCat = (cat) => {
     setForm(f => ({
@@ -81,12 +103,12 @@ function AddSupplierModal({ onClose, onAdded }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-2">Categories</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
               {CATS.map(cat => (
-                <button type="button" key={cat} onClick={() => toggleCat(cat)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-medium capitalize border-2 transition-colors ${
-                    form.categories.includes(cat) ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 text-gray-500'
-                  }`}>{cat}</button>
+                <button type="button" key={cat.id} onClick={() => toggleCat(cat.id)}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium text-left border-2 transition-colors ${
+                    form.categories.includes(cat.id) ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                  }`}>{cat.label}</button>
               ))}
             </div>
           </div>
