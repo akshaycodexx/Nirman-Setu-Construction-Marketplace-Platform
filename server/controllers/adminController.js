@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 const Order = require('../models/Order');
 const Supplier = require('../models/Supplier');
-const { sendQuoteNotification } = require('../utils/mailer');
+const { sendQuoteNotification, sendStatusNotification, sendSupplierAssignment } = require('../utils/mailer');
+const Customer = require('../models/Customer');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -38,23 +39,40 @@ const getMe = (req, res) => {
 // GET /api/admin/dashboard
 const getDashboard = async (req, res) => {
   try {
-    const [total, pending, confirmed, dispatched, delivered, cancelled] = await Promise.all([
+    const [total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers] = await Promise.all([
       Order.countDocuments(),
       Order.countDocuments({ status: 'pending' }),
+      Order.countDocuments({ status: 'quoted' }),
       Order.countDocuments({ status: 'confirmed' }),
       Order.countDocuments({ status: 'dispatched' }),
       Order.countDocuments({ status: 'delivered' }),
       Order.countDocuments({ status: 'cancelled' }),
+      Customer.countDocuments(),
     ]);
+
+    // Revenue: sum of advance payments collected
+    const revenueResult = await Order.aggregate([
+      { $match: { 'payment.status': { $in: ['advance_paid', 'fully_paid'] } } },
+      { $group: { _id: null, total: { $sum: '$payment.advanceAmount' } } },
+    ]);
+    const advanceCollected = revenueResult[0]?.total || 0;
+
+    // Quoted value: sum of all quoted amounts
+    const quotedResult = await Order.aggregate([
+      { $match: { 'quote.amount': { $exists: true } } },
+      { $group: { _id: null, total: { $sum: '$quote.amount' } } },
+    ]);
+    const totalQuotedValue = quotedResult[0]?.total || 0;
 
     const recent = await Order.find()
       .sort({ createdAt: -1 })
-      .limit(5)
-      .select('orderId status category customer.name delivery.city createdAt');
+      .limit(8)
+      .select('orderId status category customer.name delivery.city createdAt quote.amount payment.status');
 
     res.json({
       success: true,
-      stats: { total, pending, confirmed, dispatched, delivered, cancelled },
+      stats: { total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers },
+      revenue: { advanceCollected, totalQuotedValue },
       recent,
     });
   } catch (err) {
@@ -113,12 +131,15 @@ const updateStatus = async (req, res) => {
     if (!validStatuses.includes(status))
       return res.status(400).json({ success: false, message: 'Invalid status' });
 
-    const order = await Order.findOneAndUpdate(
-      { orderId: req.params.orderId },
-      { status, ...(adminNote !== undefined && { adminNote }) },
-      { new: true }
-    );
+    const order = await Order.findOne({ orderId: req.params.orderId });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    order.status = status;
+    if (adminNote !== undefined) order.adminNote = adminNote;
+    order.timeline.push({ status, note: adminNote || '', by: 'admin' });
+    await order.save();
+
+    sendStatusNotification(order).catch(e => console.error('Status email failed:', e.message));
 
     res.json({ success: true, order });
   } catch (err) {
@@ -164,16 +185,37 @@ const assignSupplier = async (req, res) => {
     const supplier = await Supplier.findById(supplierId);
     if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-    const order = await Order.findOneAndUpdate(
-      { orderId: req.params.orderId },
-      { supplierId, status: 'confirmed' },
-      { new: true }
-    ).populate('supplierId', 'name phone businessName');
-
+    const order = await Order.findOne({ orderId: req.params.orderId });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    order.supplierId = supplierId;
+    order.status = 'confirmed';
+    order.timeline.push({ status: 'confirmed', note: 'Supplier assigned', by: 'admin' });
+    await order.save();
+    await order.populate('supplierId', 'name phone businessName');
+
+    sendSupplierAssignment(order, supplier).catch(e => console.error('Supplier email failed:', e.message));
+
     res.json({ success: true, order });
   } catch (err) {
     console.error('assignSupplier error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/admin/orders/:orderId/payment
+const markFullyPaid = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    order.payment.status = 'fully_paid';
+    order.timeline.push({ status: order.status, note: 'Marked as fully paid by admin', by: 'admin' });
+    await order.save();
+
+    res.json({ success: true, order });
+  } catch (err) {
+    console.error('markFullyPaid error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -263,5 +305,5 @@ const toggleSupplier = async (req, res) => {
 
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, updateStatus, sendQuote,
-  assignSupplier, getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
+  assignSupplier, markFullyPaid, getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
 };

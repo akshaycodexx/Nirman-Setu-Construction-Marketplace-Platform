@@ -2,7 +2,7 @@ const express = require('express');
 const { protect } = require('../middleware/auth');
 const {
   login, getMe, getDashboard,
-  getOrders, getOrderById, updateStatus, sendQuote, assignSupplier,
+  getOrders, getOrderById, updateStatus, sendQuote, assignSupplier, markFullyPaid,
   getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
 } = require('../controllers/adminController');
 
@@ -21,6 +21,7 @@ router.get('/orders/:orderId', protect, getOrderById);
 router.put('/orders/:orderId/status', protect, updateStatus);
 router.put('/orders/:orderId/quote', protect, sendQuote);
 router.put('/orders/:orderId/assign-supplier', protect, assignSupplier);
+router.put('/orders/:orderId/payment', protect, markFullyPaid);
 
 // Suppliers
 router.get('/suppliers', protect, getSuppliers);

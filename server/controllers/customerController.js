@@ -2,9 +2,18 @@ const jwt = require('jsonwebtoken');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
 const { createRazorpayOrder, verifySignature } = require('../utils/razorpay');
+const { sendPaymentConfirmation } = require('../utils/mailer');
 
 function signToken(id) {
   return jwt.sign({ id, role: 'customer' }, process.env.JWT_SECRET, { expiresIn: '30d' });
+}
+
+// Link anonymous orders (same phone) to this customer account
+async function linkOrdersByPhone(customerId, phone) {
+  await Order.updateMany(
+    { 'customer.phone': phone, customerId: null },
+    { $set: { customerId } }
+  );
 }
 
 // POST /api/customer/register
@@ -15,6 +24,7 @@ exports.register = async (req, res) => {
     const exists = await Customer.findOne({ phone });
     if (exists) return res.status(409).json({ message: 'Phone already registered' });
     const customer = await Customer.create({ name, phone, email, password });
+    await linkOrdersByPhone(customer._id, phone);
     const token = signToken(customer._id);
     res.status(201).json({ token, customer: { _id: customer._id, name: customer.name, phone: customer.phone, email: customer.email } });
   } catch (err) {
@@ -31,6 +41,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid phone or password' });
     }
     if (!customer.isActive) return res.status(403).json({ message: 'Account deactivated' });
+    await linkOrdersByPhone(customer._id, phone);
     const token = signToken(customer._id);
     res.json({ token, customer: { _id: customer._id, name: customer.name, phone: customer.phone, email: customer.email } });
   } catch (err) {
@@ -41,6 +52,22 @@ exports.login = async (req, res) => {
 // GET /api/customer/me
 exports.getMe = async (req, res) => {
   res.json(req.customer);
+};
+
+// PATCH /api/customer/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+    const update = {};
+    if (name) update.name = name;
+    if (email !== undefined) update.email = email;
+    if (address) update.address = address;
+
+    const customer = await Customer.findByIdAndUpdate(req.customer._id, update, { new: true }).select('-password');
+    res.json(customer);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // GET /api/customer/orders
@@ -112,6 +139,8 @@ exports.verifyPayment = async (req, res) => {
     order.status = 'confirmed';
     order.timeline.push({ status: 'confirmed', note: 'Advance payment received', by: 'customer' });
     await order.save();
+
+    sendPaymentConfirmation(order).catch(e => console.error('Payment email failed:', e.message));
 
     res.json({ message: 'Payment verified', order });
   } catch (err) {

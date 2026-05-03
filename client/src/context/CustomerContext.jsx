@@ -18,7 +18,10 @@ export function CustomerProvider({ children }) {
 
   const loginCustomer = (token, data) => {
     localStorage.setItem('customerToken', token);
-    setCustomer(data);
+    // Fetch full profile after login so we have address/createdAt
+    axios.get('/api/customer/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setCustomer(r.data))
+      .catch(() => setCustomer(data));
   };
 
   const logoutCustomer = () => {

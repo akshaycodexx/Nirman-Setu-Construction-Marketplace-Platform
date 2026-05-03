@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings } from 'lucide-react';
 
 const navLinks = [
   { to: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/customer/orders', icon: ClipboardList, label: 'My Orders' },
+  { to: '/customer/profile', icon: Settings, label: 'Profile' },
 ];
 
 const STATUS_COLORS = {

@@ -216,33 +216,7 @@ export default function AdminOrderDetail() {
           )}
 
           {/* Payment Status */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-orange-500" /> Payment Status
-            </h3>
-            <div className="flex items-center gap-2 mb-3">
-              {(() => {
-                const p = PAYMENT_LABELS[order.payment?.status] || PAYMENT_LABELS.none;
-                return <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${p.cls}`}>{p.label}</span>;
-              })()}
-            </div>
-            {order.payment?.advanceAmount && (
-              <div className="text-sm space-y-1 text-gray-600">
-                <p>Advance: <strong className="text-gray-900">₹{order.payment.advanceAmount.toLocaleString('en-IN')}</strong></p>
-                {order.payment.advancePaidAt && (
-                  <p>Paid at: {new Date(order.payment.advancePaidAt).toLocaleString('en-IN')}</p>
-                )}
-                {order.payment.razorpayPaymentId && (
-                  <p className="font-mono text-xs text-gray-400 mt-2 break-all">
-                    Payment ID: {order.payment.razorpayPaymentId}
-                  </p>
-                )}
-              </div>
-            )}
-            {order.payment?.status === 'none' && (
-              <p className="text-sm text-gray-400">No payment received yet.</p>
-            )}
-          </div>
+          <PaymentCard order={order} setOrder={setOrder} orderId={orderId} />
         </div>
 
         {/* Right col — actions */}
@@ -363,6 +337,56 @@ export default function AdminOrderDetail() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+function PaymentCard({ order, setOrder, orderId }) {
+  const [marking, setMarking] = useState(false);
+  const p = PAYMENT_LABELS[order.payment?.status] || PAYMENT_LABELS.none;
+
+  const handleMarkFullyPaid = async () => {
+    setMarking(true);
+    try {
+      const { data } = await axios.put(`/api/admin/orders/${orderId}/payment`);
+      setOrder(data.order);
+      toast.success('Marked as fully paid!');
+    } catch {
+      toast.error('Failed to update payment');
+    }
+    setMarking(false);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <CreditCard className="w-4 h-4 text-orange-500" /> Payment Status
+      </h3>
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${p.cls}`}>{p.label}</span>
+      </div>
+      {order.payment?.advanceAmount ? (
+        <div className="text-sm space-y-1 text-gray-600">
+          <p>Advance: <strong className="text-gray-900">₹{order.payment.advanceAmount.toLocaleString('en-IN')}</strong></p>
+          {order.payment.advancePaidAt && (
+            <p>Paid at: {new Date(order.payment.advancePaidAt).toLocaleString('en-IN')}</p>
+          )}
+          {order.payment.razorpayPaymentId && (
+            <p className="font-mono text-xs text-gray-400 mt-1 break-all">ID: {order.payment.razorpayPaymentId}</p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">No payment received yet.</p>
+      )}
+      {order.payment?.status === 'advance_paid' && (
+        <button
+          onClick={handleMarkFullyPaid}
+          disabled={marking}
+          className="mt-4 w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+        >
+          {marking ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : <><CheckCircle className="w-4 h-4" /> Mark Fully Paid</>}
+        </button>
+      )}
+    </div>
   );
 }
 

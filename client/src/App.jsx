@@ -30,6 +30,7 @@ import CustomerRegister from './pages/customer/CustomerRegister';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerOrderDetail from './pages/customer/CustomerOrderDetail';
+import CustomerProfile from './pages/customer/CustomerProfile';
 
 function AdminGuard({ children }) {
   const { admin, loading } = useAdmin();
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="/customer/dashboard" element={<CustomerGuard><CustomerDashboard /></CustomerGuard>} />
             <Route path="/customer/orders" element={<CustomerGuard><CustomerOrders /></CustomerGuard>} />
             <Route path="/customer/orders/:orderId" element={<CustomerGuard><CustomerOrderDetail /></CustomerGuard>} />
+            <Route path="/customer/profile" element={<CustomerGuard><CustomerProfile /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const customerAuth = require('../middleware/customerAuth');
 const {
-  register, login, getMe,
+  register, login, getMe, updateProfile,
   getMyOrders, getOrderById,
   createPayment, verifyPayment,
 } = require('../controllers/customerController');
@@ -10,6 +10,7 @@ const {
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', customerAuth, getMe);
+router.patch('/profile', customerAuth, updateProfile);
 router.get('/orders', customerAuth, getMyOrders);
 router.get('/orders/:orderId', customerAuth, getOrderById);
 router.post('/orders/:orderId/payment/create', customerAuth, createPayment);
