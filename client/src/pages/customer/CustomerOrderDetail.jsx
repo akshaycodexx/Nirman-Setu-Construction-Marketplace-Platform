@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -124,6 +124,7 @@ export default function CustomerOrderDetail() {
   const stepIndex = STATUS_STEPS.indexOf(order.status);
   const canPay = order.status === 'quoted' && order.payment.status === 'none' && order.quote?.amount;
   const canCancel = order.status === 'pending';
+  const canReceipt = order.payment?.status === 'advance_paid' || order.payment?.status === 'fully_paid';
 
   return (
     <CustomerLayout>
@@ -139,6 +140,12 @@ export default function CustomerOrderDetail() {
           <div className="ml-auto flex items-center gap-2">
             <StatusBadge status={order.status} />
             {order.payment.status !== 'none' && <PaymentBadge status={order.payment.status} />}
+            {canReceipt && (
+              <Link to={`/receipt/${order.orderId}`} target="_blank"
+                className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors">
+                <Receipt className="w-3 h-3" /> Receipt
+              </Link>
+            )}
             {canCancel && (
               <button onClick={handleCancel} disabled={cancelling}
                 className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50">

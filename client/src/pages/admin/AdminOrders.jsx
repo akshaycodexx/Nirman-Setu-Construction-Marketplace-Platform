@@ -49,6 +49,23 @@ export default function AdminOrders() {
     setParams(next);
   };
 
+  const handleExport = async () => {
+    const token = localStorage.getItem('adminToken');
+    const q = new URLSearchParams();
+    if (status !== 'all') q.set('status', status);
+    if (category !== 'all') q.set('category', category);
+    const res = await fetch(`/api/admin/orders/export?${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nirman-setu-orders-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <AdminLayout>
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
@@ -59,13 +76,12 @@ export default function AdminOrders() {
           <p className="text-gray-500 text-sm mt-0.5">{total} total orders</p>
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href={`/api/admin/orders/export?status=${status !== 'all' ? status : ''}&category=${category !== 'all' ? category : ''}`}
-            download
+          <button
+            onClick={handleExport}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
           >
             <Download className="w-4 h-4" /> Export CSV
-          </a>
+          </button>
           <button onClick={fetchOrders} className="text-gray-500 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100">
             <RefreshCw className="w-4 h-4" />
           </button>

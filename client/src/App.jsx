@@ -8,6 +8,7 @@ import { CustomerProvider, useCustomer } from './context/CustomerContext';
 import Home from './pages/Home';
 import RequestOrder from './pages/RequestOrder';
 import TrackOrder from './pages/TrackOrder';
+import Receipt from './pages/Receipt';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="/request" element={<RequestOrder />} />
             <Route path="/track" element={<TrackOrder />} />
             <Route path="/track/:orderId" element={<TrackOrder />} />
+            <Route path="/receipt/:orderId" element={<Receipt />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
 

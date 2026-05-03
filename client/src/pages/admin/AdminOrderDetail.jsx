@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   ArrowLeft, Package, User, MapPin,
-  Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard
+  Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt
 } from 'lucide-react';
 
 const PAYMENT_LABELS = {
@@ -146,6 +146,12 @@ export default function AdminOrderDetail() {
             {new Date(order.createdAt).toLocaleString('en-IN')}
           </p>
         </div>
+        {order.quote?.amount && (
+          <Link to={`/receipt/${order.orderId}`} target="_blank"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-xl transition-colors">
+            <Receipt className="w-4 h-4" /> Receipt
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
