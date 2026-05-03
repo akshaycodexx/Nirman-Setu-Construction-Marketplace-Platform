@@ -571,6 +571,31 @@ const getAnalytics = async (req, res) => {
   }
 };
 
+// GET /api/admin/complaints
+const getComplaints = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = { 'complaint.text': { $exists: true, $ne: '' } };
+    if (status === 'open') filter['complaint.status'] = 'open';
+    if (status === 'resolved') filter['complaint.status'] = 'resolved';
+
+    const orders = await Order.find(filter)
+      .select('orderId status category customer delivery complaint supplierId createdAt')
+      .populate('supplierId', 'name businessName phone')
+      .sort({ 'complaint.raisedAt': -1 })
+      .limit(100);
+
+    const [openCount, resolvedCount] = await Promise.all([
+      Order.countDocuments({ 'complaint.text': { $exists: true, $ne: '' }, 'complaint.status': 'open' }),
+      Order.countDocuments({ 'complaint.text': { $exists: true, $ne: '' }, 'complaint.status': 'resolved' }),
+    ]);
+
+    res.json({ success: true, orders, summary: { open: openCount, resolved: resolvedCount } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // GET /api/admin/payouts
 const getPayouts = async (req, res) => {
   try {
@@ -619,5 +644,5 @@ module.exports = {
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
   getNotifications, markSupplierPayout, resolveComplaint,
-  getAnalytics, getPayouts,
+  getAnalytics, getPayouts, getComplaints,
 };

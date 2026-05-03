@@ -185,6 +185,77 @@ exports.reviewOrder = async (req, res) => {
   }
 };
 
+// GET /api/customer/notifications
+exports.getNotifications = async (req, res) => {
+  try {
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const orders = await Order.find({ customerId: req.customer._id })
+      .select('orderId category payment complaint timeline')
+      .sort({ updatedAt: -1 })
+      .limit(20);
+
+    const notifications = [];
+    for (const order of orders) {
+      const recent = (order.timeline || []).filter(t => new Date(t.at) >= since);
+      for (const entry of recent) {
+        notifications.push({
+          _id: `${order._id}_${new Date(entry.at).getTime()}`,
+          orderId: order.orderId,
+          category: order.category,
+          type: entry.status === 'quoted' ? 'quote' : 'status',
+          status: entry.status,
+          note: entry.note,
+          at: entry.at,
+        });
+      }
+      if (order.payment?.advancePaidAt && new Date(order.payment.advancePaidAt) >= since) {
+        notifications.push({
+          _id: `${order._id}_pay`,
+          orderId: order.orderId,
+          category: order.category,
+          type: 'payment',
+          status: 'payment',
+          note: `₹${order.payment.advanceAmount?.toLocaleString('en-IN')} advance confirmed`,
+          at: order.payment.advancePaidAt,
+        });
+      }
+      if (order.complaint?.resolvedAt && new Date(order.complaint.resolvedAt) >= since) {
+        notifications.push({
+          _id: `${order._id}_resolve`,
+          orderId: order.orderId,
+          category: order.category,
+          type: 'complaint',
+          status: 'resolved',
+          note: 'Aapki complaint resolve ho gayi',
+          at: order.complaint.resolvedAt,
+        });
+      }
+    }
+    notifications.sort((a, b) => new Date(b.at) - new Date(a.at));
+    const sliced = notifications.slice(0, 15);
+    res.json({ notifications: sliced, unread: sliced.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PATCH /api/customer/change-password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Both fields required' });
+    if (newPassword.length < 6) return res.status(400).json({ message: 'Min 6 characters required' });
+    const customer = await Customer.findById(req.customer._id);
+    const valid = await customer.comparePassword(currentPassword);
+    if (!valid) return res.status(401).json({ message: 'Current password is incorrect' });
+    customer.password = newPassword;
+    await customer.save();
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/customer/orders/:orderId/payment/verify
 exports.verifyPayment = async (req, res) => {
   try {

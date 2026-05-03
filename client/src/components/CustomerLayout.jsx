@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useCustomer } from '../context/CustomerContext';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings, Bell, CheckCircle, IndianRupee, Package, AlertCircle } from 'lucide-react';
 
 const navLinks = [
   { to: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -42,11 +43,38 @@ export function PaymentBadge({ status }) {
   );
 }
 
+const NOTIF_ICONS = {
+  quote: { icon: Package, bg: 'bg-blue-100', color: 'text-blue-600', label: 'Quote Received' },
+  payment: { icon: IndianRupee, bg: 'bg-green-100', color: 'text-green-600', label: 'Payment' },
+  complaint: { icon: CheckCircle, bg: 'bg-purple-100', color: 'text-purple-600', label: 'Complaint' },
+  status: { icon: AlertCircle, bg: 'bg-orange-100', color: 'text-orange-600', label: 'Update' },
+};
+
 export default function CustomerLayout({ children }) {
-  const { customer, logoutCustomer } = useCustomer();
+  const { customer, logoutCustomer, authHeader } = useCustomer();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifs, setNotifs] = useState({ notifications: [], unread: 0 });
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    if (!customer) return;
+    const fetchNotifs = () =>
+      axios.get('/api/customer/notifications', { headers: authHeader() })
+        .then(r => setNotifs(r.data))
+        .catch(() => {});
+    fetchNotifs();
+    const id = setInterval(fetchNotifs, 60000);
+    return () => clearInterval(id);
+  }, [customer]);
+
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
     logoutCustomer();
@@ -120,11 +148,57 @@ export default function CustomerLayout({ children }) {
           <button className="lg:hidden p-1.5 text-gray-500 hover:text-gray-800" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
-          <nav className="flex items-center gap-1.5 text-sm text-gray-500">
+          <nav className="flex items-center gap-1.5 text-sm text-gray-500 flex-1">
             <span>Customer</span>
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-gray-900 font-medium capitalize">{pathname.split('/').pop() || 'Dashboard'}</span>
           </nav>
+
+          {/* Notification Bell */}
+          <div className="relative" ref={notifRef}>
+            <button onClick={() => setNotifOpen(o => !o)}
+              className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+              <Bell className="w-5 h-5" />
+              {notifs.unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {notifs.unread > 9 ? '9+' : notifs.unread}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-11 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <p className="font-semibold text-gray-800 text-sm">Notifications</p>
+                  <span className="text-xs text-gray-400">Last 48 hrs</span>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifs.notifications.length === 0 ? (
+                    <p className="text-center text-gray-400 text-sm py-8">Koi naya notification nahi</p>
+                  ) : (
+                    notifs.notifications.map(n => {
+                      const cfg = NOTIF_ICONS[n.type] || NOTIF_ICONS.status;
+                      const Icon = cfg.icon;
+                      return (
+                        <Link key={n._id} to={`/customer/orders/${n.orderId}`}
+                          onClick={() => setNotifOpen(false)}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
+                          <div className={`w-7 h-7 ${cfg.bg} rounded-full flex items-center justify-center shrink-0 mt-0.5`}>
+                            <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 capitalize">{n.orderId} — {n.status?.replace('_', ' ')}</p>
+                            {n.note && <p className="text-xs text-gray-500 truncate">{n.note}</p>}
+                            <p className="text-xs text-gray-400 mt-0.5">{new Date(n.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>

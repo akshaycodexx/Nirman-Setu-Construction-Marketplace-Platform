@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout from '../../components/CustomerLayout';
-import { User, Loader2, CheckCircle } from 'lucide-react';
+import { User, Loader2, CheckCircle, Lock } from 'lucide-react';
 
 export default function CustomerProfile() {
   const { customer, loginCustomer, authHeader } = useCustomer();
@@ -16,6 +16,8 @@ export default function CustomerProfile() {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
 
   const set = (field) => (e) => {
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -41,6 +43,24 @@ export default function CustomerProfile() {
       toast.error(err.response?.data?.message || 'Update failed');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirm) { toast.error('Passwords do not match'); return; }
+    setPwSaving(true);
+    try {
+      await axios.patch('/api/customer/change-password', {
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword,
+      }, { headers: authHeader() });
+      toast.success('Password changed successfully!');
+      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Password change failed');
+    } finally {
+      setPwSaving(false);
     }
   };
 
@@ -99,6 +119,37 @@ export default function CustomerProfile() {
             ) : (
               'Save Changes'
             )}
+          </button>
+        </form>
+
+        {/* Change Password */}
+        <form onSubmit={handlePasswordChange} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Lock className="w-4 h-4 text-gray-400" />
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Change Password</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Current Password</label>
+            <input type="password" value={pwForm.currentPassword} required
+              onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+              className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">New Password</label>
+            <input type="password" value={pwForm.newPassword} required minLength={6}
+              onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+              placeholder="Min 6 characters"
+              className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Confirm New Password</label>
+            <input type="password" value={pwForm.confirm} required
+              onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+              className={inputCls} />
+          </div>
+          <button type="submit" disabled={pwSaving}
+            className="w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+            {pwSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : <><Lock className="w-4 h-4" /> Update Password</>}
           </button>
         </form>
 

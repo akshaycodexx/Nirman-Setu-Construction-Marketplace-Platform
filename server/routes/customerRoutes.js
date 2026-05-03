@@ -6,6 +6,7 @@ const {
   getMyOrders, getOrderById, cancelOrder,
   reviewOrder, raiseComplaint,
   createPayment, verifyPayment,
+  getNotifications, changePassword,
 } = require('../controllers/customerController');
 const { getMessages, sendMessage } = require('../controllers/chatController');
 
@@ -13,6 +14,8 @@ router.post('/register', register);
 router.post('/login', login);
 router.get('/me', customerAuth, getMe);
 router.patch('/profile', customerAuth, updateProfile);
+router.patch('/change-password', customerAuth, changePassword);
+router.get('/notifications', customerAuth, getNotifications);
 router.get('/orders', customerAuth, getMyOrders);
 router.get('/orders/:orderId', customerAuth, getOrderById);
 router.put('/orders/:orderId/cancel', customerAuth, cancelOrder);

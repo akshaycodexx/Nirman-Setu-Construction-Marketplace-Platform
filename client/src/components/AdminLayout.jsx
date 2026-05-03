@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAdmin } from '../context/AdminContext';
 import {
   LayoutDashboard, ClipboardList, LogOut,
-  HardHat, Menu, X, ChevronRight, Users, Settings, Bell, IndianRupee, TrendingUp, Wallet
+  HardHat, Menu, X, ChevronRight, Users, Settings, Bell, IndianRupee, TrendingUp, Wallet, AlertTriangle
 } from 'lucide-react';
 
 const navLinks = [
@@ -13,6 +13,7 @@ const navLinks = [
   { to: '/admin/suppliers', icon: Users, label: 'Suppliers' },
   { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
   { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
+  { to: '/admin/complaints', icon: AlertTriangle, label: 'Complaints' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 

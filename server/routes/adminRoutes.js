@@ -6,7 +6,7 @@ const {
   getNotifications, markSupplierPayout, resolveComplaint,
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
-  getAnalytics, getPayouts,
+  getAnalytics, getPayouts, getComplaints,
 } = require('../controllers/adminController');
 const { getMessages, sendMessage } = require('../controllers/chatController');
 
@@ -22,6 +22,7 @@ router.get('/dashboard', protect, getDashboard);
 router.get('/notifications', protect, getNotifications);
 router.get('/analytics', protect, getAnalytics);
 router.get('/payouts', protect, getPayouts);
+router.get('/complaints', protect, getComplaints);
 
 // Orders
 router.get('/orders', protect, getOrders);
