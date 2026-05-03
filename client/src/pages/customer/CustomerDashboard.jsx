@@ -29,7 +29,7 @@ export default function CustomerDashboard() {
     <CustomerLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Welcome */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-5 text-white">
+        <div className="bg-linear-to-r from-blue-600 to-blue-500 rounded-2xl p-5 text-white">
           <h1 className="text-xl font-bold">Welcome back, {customer?.name}!</h1>
           <p className="text-blue-100 text-sm mt-0.5">Track your construction orders here.</p>
         </div>

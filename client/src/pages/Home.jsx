@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useCustomer } from '../context/CustomerContext';
 import {
   Package, Truck, Settings, Shield, Clock, Star,
-  ArrowRight, CheckCircle, Phone, ChevronRight
+  ArrowRight, CheckCircle, Phone, ChevronRight, User, ClipboardList
 } from 'lucide-react';
 
 const categories = [
@@ -48,12 +49,14 @@ const stats = [
 ];
 
 export default function Home() {
+  const { customer } = useCustomer();
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
+      <section className="relative bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #f97316 0%, transparent 50%), radial-gradient(circle at 80% 20%, #f97316 0%, transparent 40%)' }}
         />
@@ -182,7 +185,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map(f => (
-            <div key={f.title} className="bg-gradient-to-b from-orange-50 to-white border border-orange-100 rounded-2xl p-6 text-center">
+            <div key={f.title} className="bg-linear-to-b from-orange-50 to-white border border-orange-100 rounded-2xl p-6 text-center">
               <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <f.icon className="w-6 h-6 text-white" />
               </div>
@@ -193,8 +196,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Customer Portal CTA */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
+        <div className="bg-linear-to-r from-blue-600 to-blue-500 rounded-3xl p-8 md:p-10 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <p className="text-blue-200 text-sm font-medium mb-1">Existing Customer?</p>
+            <h3 className="text-2xl font-bold mb-1">
+              {customer ? `Welcome back, ${customer.name.split(' ')[0]}!` : 'Apne Orders Track Karo'}
+            </h3>
+            <p className="text-blue-100 text-sm">
+              {customer
+                ? 'Dashboard mein apne saare orders dekho, payment karo, status track karo.'
+                : 'Login karke apne saare orders ek jagah dekho — status, quotes, payments sab.'}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            {customer ? (
+              <>
+                <Link to="/customer/dashboard"
+                  className="flex items-center gap-2 bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm whitespace-nowrap">
+                  <ClipboardList className="w-4 h-4" /> My Dashboard
+                </Link>
+                <Link to="/request"
+                  className="flex items-center gap-2 bg-blue-700/40 border border-white/30 text-white font-medium px-6 py-3 rounded-xl hover:bg-blue-700/60 transition-colors text-sm whitespace-nowrap">
+                  + New Order
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/customer/login"
+                  className="flex items-center gap-2 bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm whitespace-nowrap">
+                  <User className="w-4 h-4" /> Login
+                </Link>
+                <Link to="/customer/register"
+                  className="flex items-center gap-2 bg-blue-700/40 border border-white/30 text-white font-medium px-6 py-3 rounded-xl hover:bg-blue-700/60 transition-colors text-sm whitespace-nowrap">
+                  Create Account
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Banner */}
-      <section className="bg-gradient-to-r from-orange-500 to-orange-600 py-14 mx-4 sm:mx-6 rounded-3xl mb-8 max-w-6xl md:mx-auto">
+      <section className="bg-linear-to-r from-orange-500 to-orange-600 py-14 mx-4 sm:mx-6 rounded-3xl mb-8 max-w-6xl md:mx-auto">
         <div className="px-6 text-center text-white">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
             Abhi Quote Lo — Bilkul Free

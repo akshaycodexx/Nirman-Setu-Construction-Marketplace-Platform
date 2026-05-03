@@ -2,7 +2,7 @@ const express = require('express');
 const { protectSupplier } = require('../middleware/supplierAuth');
 const {
   login, getMe, getDashboard,
-  getMyOrders, getOrderById, updateOrderStatus, updateAvailability,
+  getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile,
 } = require('../controllers/supplierController');
 
 const router = express.Router();
@@ -14,5 +14,6 @@ router.get('/orders', protectSupplier, getMyOrders);
 router.get('/orders/:orderId', protectSupplier, getOrderById);
 router.put('/orders/:orderId/status', protectSupplier, updateOrderStatus);
 router.put('/availability', protectSupplier, updateAvailability);
+router.patch('/profile', protectSupplier, updateProfile);
 
 module.exports = router;

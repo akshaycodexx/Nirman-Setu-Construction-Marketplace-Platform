@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -26,6 +26,8 @@ export default function CustomerOrderDetail() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
 
+  const [cancelling, setCancelling] = useState(false);
+
   const fetchOrder = () =>
     axios.get(`/api/customer/orders/${orderId}`, { headers: authHeader() })
       .then(r => setOrder(r.data))
@@ -33,6 +35,20 @@ export default function CustomerOrderDetail() {
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchOrder(); }, [orderId]);
+
+  const handleCancel = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    setCancelling(true);
+    try {
+      const { data } = await axios.put(`/api/customer/orders/${orderId}/cancel`, {}, { headers: authHeader() });
+      setOrder(data.order);
+      toast.success('Order cancelled');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Cancel failed');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const handlePayAdvance = async () => {
     setPaying(true);
@@ -107,6 +123,7 @@ export default function CustomerOrderDetail() {
 
   const stepIndex = STATUS_STEPS.indexOf(order.status);
   const canPay = order.status === 'quoted' && order.payment.status === 'none' && order.quote?.amount;
+  const canCancel = order.status === 'pending';
 
   return (
     <CustomerLayout>
@@ -119,9 +136,16 @@ export default function CustomerOrderDetail() {
             <h1 className="text-lg font-bold text-gray-900">{order.orderId}</h1>
             <p className="text-gray-500 text-sm capitalize">{order.category}</p>
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex items-center gap-2">
             <StatusBadge status={order.status} />
             {order.payment.status !== 'none' && <PaymentBadge status={order.payment.status} />}
+            {canCancel && (
+              <button onClick={handleCancel} disabled={cancelling}
+                className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+                {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                Cancel
+              </button>
+            )}
           </div>
         </div>
 

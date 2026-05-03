@@ -94,6 +94,21 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
+// PUT /api/customer/orders/:orderId/cancel
+exports.cancelOrder = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.status !== 'pending') return res.status(400).json({ message: 'Only pending orders can be cancelled' });
+    order.status = 'cancelled';
+    order.timeline.push({ status: 'cancelled', note: 'Cancelled by customer', by: 'customer' });
+    await order.save();
+    res.json({ message: 'Order cancelled', order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/customer/orders/:orderId/payment/create
 exports.createPayment = async (req, res) => {
   try {

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSupplier } from '../context/SupplierContext';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings } from 'lucide-react';
 
 const navLinks = [
   { to: '/supplier/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/supplier/orders', icon: ClipboardList, label: 'My Orders' },
+  { to: '/supplier/profile', icon: Settings, label: 'Profile' },
 ];
 
 export default function SupplierLayout({ children }) {

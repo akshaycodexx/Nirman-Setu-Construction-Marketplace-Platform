@@ -2,7 +2,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
-import { ClipboardList, Search, ArrowRight, RefreshCw } from 'lucide-react';
+
+const PAYMENT_BADGE = {
+  advance_paid: 'bg-blue-100 text-blue-700',
+  fully_paid: 'bg-green-100 text-green-700',
+};
+
+import { ClipboardList, Search, ArrowRight, RefreshCw, Download } from 'lucide-react';
 
 const STATUSES = ['all', 'pending', 'quoted', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
 const CATEGORIES = ['all', 'material', 'transport', 'equipment'];
@@ -52,9 +58,18 @@ export default function AdminOrders() {
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">{total} total orders</p>
         </div>
-        <button onClick={fetchOrders} className="text-gray-500 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100">
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/admin/orders/export?status=${status !== 'all' ? status : ''}&category=${category !== 'all' ? category : ''}`}
+            download
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </a>
+          <button onClick={fetchOrders} className="text-gray-500 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -142,7 +157,10 @@ export default function AdminOrders() {
                   </div>
                   <div className="hidden sm:block col-span-3">
                     <p className="text-sm font-medium text-gray-800 truncate">{order.customer?.name}</p>
-                    <p className="text-xs text-gray-400">{order.customer?.phone}</p>
+                    <p className="text-xs text-gray-400">
+                      {order.customer?.phone}
+                      {order.quote?.amount ? ` · ₹${order.quote.amount.toLocaleString('en-IN')}` : ''}
+                    </p>
                   </div>
                   <div className="hidden sm:block col-span-2">
                     <span className="text-sm text-gray-600 capitalize">{order.category}</span>
@@ -150,8 +168,13 @@ export default function AdminOrders() {
                   <div className="hidden sm:block col-span-2">
                     <span className="text-sm text-gray-600">{order.delivery?.city}</span>
                   </div>
-                  <div className="col-span-5 sm:col-span-2 flex justify-end sm:justify-start">
+                  <div className="col-span-5 sm:col-span-2 flex justify-end sm:justify-start flex-wrap gap-1">
                     <StatusBadge status={order.status} />
+                    {PAYMENT_BADGE[order.payment?.status] && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PAYMENT_BADGE[order.payment.status]}`}>
+                        {order.payment.status === 'advance_paid' ? 'Advance' : 'Paid'}
+                      </span>
+                    )}
                   </div>
                   <div className="hidden sm:flex col-span-1 items-center justify-between gap-1">
                     <span className="text-xs text-gray-400">

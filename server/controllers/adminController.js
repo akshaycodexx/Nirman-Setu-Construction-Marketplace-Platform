@@ -220,6 +220,39 @@ const markFullyPaid = async (req, res) => {
   }
 };
 
+// GET /api/admin/orders/export  — CSV download
+const exportOrders = async (req, res) => {
+  try {
+    const { status, category } = req.query;
+    const filter = {};
+    if (status && status !== 'all') filter.status = status;
+    if (category && category !== 'all') filter.category = category;
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
+
+    const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['Order ID', 'Status', 'Category', 'Customer Name', 'Customer Phone', 'City', 'Delivery Date', 'Slot', 'Quote Amount', 'Payment Status', 'Advance Paid', 'Created At'];
+    const rows = orders.map(o => [
+      o.orderId, o.status, o.category,
+      o.customer?.name, o.customer?.phone,
+      o.delivery?.city,
+      o.delivery?.date ? new Date(o.delivery.date).toLocaleDateString('en-IN') : '',
+      o.delivery?.slot,
+      o.quote?.amount ?? '',
+      o.payment?.status ?? 'none',
+      o.payment?.advanceAmount ?? '',
+      new Date(o.createdAt).toLocaleDateString('en-IN'),
+    ].map(escape).join(','));
+
+    const csv = [header.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="nirman-setu-orders-${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // ── Supplier Management ──────────────────────────────────────────────────────
 
 // GET /api/admin/suppliers
@@ -304,6 +337,6 @@ const toggleSupplier = async (req, res) => {
 };
 
 module.exports = {
-  login, getMe, getDashboard, getOrders, getOrderById, updateStatus, sendQuote,
+  login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
   assignSupplier, markFullyPaid, getSuppliers, createSupplier, updateSupplierKyc, toggleSupplier,
 };

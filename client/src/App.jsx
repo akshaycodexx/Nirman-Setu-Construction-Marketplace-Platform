@@ -23,6 +23,7 @@ import SupplierLogin from './pages/supplier/SupplierLogin';
 import SupplierDashboard from './pages/supplier/SupplierDashboard';
 import SupplierOrders from './pages/supplier/SupplierOrders';
 import SupplierOrderDetail from './pages/supplier/SupplierOrderDetail';
+import SupplierProfile from './pages/supplier/SupplierProfile';
 
 // Customer pages
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -31,6 +32,7 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerOrderDetail from './pages/customer/CustomerOrderDetail';
 import CustomerProfile from './pages/customer/CustomerProfile';
+import NotFound from './pages/NotFound';
 
 function AdminGuard({ children }) {
   const { admin, loading } = useAdmin();
@@ -103,6 +105,7 @@ export default function App() {
             <Route path="/supplier/dashboard" element={<SupplierGuard><SupplierDashboard /></SupplierGuard>} />
             <Route path="/supplier/orders" element={<SupplierGuard><SupplierOrders /></SupplierGuard>} />
             <Route path="/supplier/orders/:orderId" element={<SupplierGuard><SupplierOrderDetail /></SupplierGuard>} />
+            <Route path="/supplier/profile" element={<SupplierGuard><SupplierProfile /></SupplierGuard>} />
             <Route path="/supplier" element={<Navigate to="/supplier/dashboard" replace />} />
 
             {/* Customer */}
@@ -113,6 +116,9 @@ export default function App() {
             <Route path="/customer/orders/:orderId" element={<CustomerGuard><CustomerOrderDetail /></CustomerGuard>} />
             <Route path="/customer/profile" element={<CustomerGuard><CustomerProfile /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         </CustomerProvider>

@@ -4,7 +4,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Plus, Trash2, CheckCircle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { useCustomer } from '../context/CustomerContext';
+import { Plus, Trash2, CheckCircle, ArrowLeft, ArrowRight, Loader2, User } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'material', label: 'Construction Material', emoji: '🧱', desc: 'Cement, Balu, Gitti, Sariya' },
@@ -40,6 +41,7 @@ const emptyItem = (category) => ({
 export default function RequestOrder() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { customer } = useCustomer();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState(null);
@@ -55,6 +57,20 @@ export default function RequestOrder() {
   useEffect(() => {
     if (params.get('category')) setStep(2);
   }, []);
+
+  // Pre-fill customer details when logged in
+  useEffect(() => {
+    if (customer) {
+      setForm(f => ({
+        ...f,
+        customer: {
+          name: customer.name || '',
+          phone: customer.phone || '',
+          email: customer.email || '',
+        },
+      }));
+    }
+  }, [customer]);
 
   const itemOptions = {
     material: MATERIAL_ITEMS,
@@ -386,7 +402,13 @@ export default function RequestOrder() {
           {step === 4 && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">Contact Details</h2>
-              <p className="text-gray-500 text-sm mb-6">Quote is number pe milega</p>
+              <p className="text-gray-500 text-sm mb-4">Quote is number pe milega</p>
+              {customer && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-700">
+                  <User className="w-4 h-4 shrink-0" />
+                  <span>Logged in as <strong>{customer.name}</strong> — details pre-filled</span>
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Aapka Naam <span className="text-red-400">*</span></label>

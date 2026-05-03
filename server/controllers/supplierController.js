@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const Supplier = require('../models/Supplier');
 const Order = require('../models/Order');
 
@@ -132,6 +133,30 @@ const getDashboard = async (req, res) => {
   }
 };
 
+// PATCH /api/supplier/profile
+const updateProfile = async (req, res) => {
+  try {
+    const { email, businessName, currentPassword, newPassword } = req.body;
+    const supplier = await Supplier.findById(req.supplier._id);
+
+    if (email !== undefined) supplier.email = email;
+    if (businessName !== undefined) supplier.businessName = businessName;
+
+    if (newPassword) {
+      if (!currentPassword) return res.status(400).json({ success: false, message: 'Current password required' });
+      const valid = await supplier.comparePassword(currentPassword);
+      if (!valid) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+      supplier.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    await supplier.save();
+    const { password: _, ...safe } = supplier.toObject();
+    res.json({ success: true, supplier: safe });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // PUT /api/supplier/availability
 const updateAvailability = async (req, res) => {
   try {
@@ -143,4 +168,4 @@ const updateAvailability = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability };
+module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile };
