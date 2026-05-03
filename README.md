@@ -266,7 +266,7 @@ server/
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/nirman-setu.git
+git clone https://github.com/akshaycodex/nirman-setu.git
 cd nirman-setu
 
 # Install server dependencies
@@ -466,13 +466,29 @@ SUPPORT_PHONE=919876543210
 
 ---
 
+## Author
+
+**Akshay Kumar Mandal**
+
+| Platform | Handle |
+|----------|--------|
+| GitHub | [@akshaycodex](https://github.com/akshaycodexx) |
+| Instagram | [@akshaycodex](https://instagram.com/mr.akki.kr) |
+| Twitter / X | [@akshaycodex](https://twitter.com/alonerishi14) |
+| YouTube | [@akshaycodex](https://youtube.com/@akshaycodex) |
+| LinkedIn | [@akshaycodex](https://linkedin.com/in/akshaycodex) |
+| Email | [akshaycodex@gmail.com](mailto:akshaycodex@gmail.com) |
+
+---
+
 ## License
 
-Private — All rights reserved. © 2026 Nirman Setu.
+Private — All rights reserved. © 2026 Nirman Setu. Built by Akshay Kumar Mandal.
 
 ---
 
 <div align="center">
   <strong>Built with ❤️ for the Indian construction industry</strong><br/>
+  <sub>by <a href="mailto:akshaycodex@gmail.com">Akshay Kumar Mandal</a> · @akshaycodex</sub><br/><br/>
   <sub>Reliable · Fast · Transparent</sub>
 </div>
