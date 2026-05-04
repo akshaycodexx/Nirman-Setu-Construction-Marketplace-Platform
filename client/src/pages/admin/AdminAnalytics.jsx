@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminLayout from '../../components/AdminLayout';
-import { TrendingUp, BarChart2, MapPin, Award, IndianRupee, Package } from 'lucide-react';
+import { TrendingUp, BarChart2, MapPin, Award, IndianRupee, Package, BadgeIndianRupee, Sparkles } from 'lucide-react';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -58,6 +58,8 @@ export default function AdminAnalytics() {
   const totalRevenue = monthly.reduce((s, m) => s + (m.revenue || 0), 0);
   const totalQuoted = monthly.reduce((s, m) => s + (m.quoted || 0), 0);
   const totalMonthlyOrders = monthly.reduce((s, m) => s + m.orders, 0);
+  const netProfit = data?.profit?.total || 0;
+  const feeIncome = data?.feeIncome || 0;
 
   return (
     <AdminLayout>
@@ -69,12 +71,14 @@ export default function AdminAnalytics() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         {[
           { label: 'Revenue Collected', value: loading ? '—' : `₹${totalRevenue.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'bg-green-500', sub: 'Advance payments (6 months)' },
           { label: 'Total Quoted Value', value: loading ? '—' : `₹${totalQuoted.toLocaleString('en-IN')}`, icon: TrendingUp, color: 'bg-orange-500', sub: 'All quotes (6 months)' },
           { label: 'Orders (6 months)', value: loading ? '—' : totalMonthlyOrders, icon: Package, color: 'bg-blue-500', sub: 'Total orders placed' },
           { label: 'Avg Order Value', value: loading || !totalOrders ? '—' : `₹${Math.round(totalQuoted / Math.max(totalOrders, 1)).toLocaleString('en-IN')}`, icon: BarChart2, color: 'bg-purple-500', sub: 'Per quoted order' },
+          { label: 'Net Profit', value: loading ? '—' : `₹${netProfit.toLocaleString('en-IN')}`, icon: Sparkles, color: 'bg-emerald-500', sub: 'Quote − supplier payout' },
+          { label: 'Platform Fee Income', value: loading ? '—' : `₹${feeIncome.toLocaleString('en-IN')}`, icon: BadgeIndianRupee, color: 'bg-violet-500', sub: 'Fees collected total' },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">

@@ -32,6 +32,8 @@ export default function CustomerOrderDetail() {
   const [paying, setPaying] = useState(false);
 
   const [cancelling, setCancelling] = useState(false);
+  const [platformFee, setPlatformFee] = useState(null);
+  const [payingFee, setPayingFee] = useState(false);
   const [complaintText, setComplaintText] = useState('');
   const [submittingComplaint, setSubmittingComplaint] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -82,7 +84,49 @@ export default function CustomerOrderDetail() {
       .catch(() => toast.error('Order not found'))
       .finally(() => setLoading(false));
 
-  useEffect(() => { fetchOrder(); }, [orderId]);
+  const fetchFee = () =>
+    axios.get(`/api/customer/orders/${orderId}/fee`, { headers: authHeader() })
+      .then(r => setPlatformFee(r.data.fee))
+      .catch(() => {});
+
+  const handlePayFee = async () => {
+    setPayingFee(true);
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) { toast.error('Payment gateway load nahi hua'); return; }
+      const { data } = await axios.post(`/api/customer/orders/${orderId}/fee/create`, {}, { headers: authHeader() });
+      const options = {
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Nirman Setu',
+        description: `Platform fee — ${orderId}`,
+        order_id: data.razorpayOrderId,
+        prefill: { name: customer?.name, contact: customer?.phone },
+        theme: { color: '#F97316' },
+        handler: async (response) => {
+          try {
+            await axios.post(`/api/customer/orders/${orderId}/fee/verify`, {
+              razorpayOrderId: data.razorpayOrderId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              feeId: data.feeId,
+            }, { headers: authHeader() });
+            setPlatformFee(null);
+            toast.success('Platform fee paid! Shukriya.');
+          } catch { toast.error('Verification failed. Support se contact karo.'); }
+        },
+        modal: { ondismiss: () => setPayingFee(false) },
+      };
+      new window.Razorpay(options).open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment shuru nahi ho saka');
+    } finally {
+      setPayingFee(false);
+    }
+  };
+
+  useEffect(() => { fetchOrder(); fetchFee(); }, [orderId]);
 
   // Real-time: join order room, refresh on status update
   useEffect(() => {
@@ -329,6 +373,25 @@ export default function CustomerOrderDetail() {
             </div>
           </div>
         </div>
+
+        {/* Platform Fee (if customer needs to pay) */}
+        {platformFee && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
+            <div className="flex items-start gap-3">
+              <CreditCard className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-orange-800">Platform Service Fee Due</h2>
+                <p className="text-orange-700 text-xs mt-0.5">Nirman Setu ka service charge — call pe agree kiya tha.</p>
+                <p className="text-2xl font-black text-orange-900 mt-2">₹{platformFee.amount.toLocaleString('en-IN')}</p>
+                {platformFee.note && <p className="text-xs text-orange-600 italic mt-0.5">{platformFee.note}</p>}
+              </div>
+            </div>
+            <button onClick={handlePayFee} disabled={payingFee}
+              className="mt-4 w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+              {payingFee ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><CreditCard className="w-4 h-4" /> Pay Platform Fee</>}
+            </button>
+          </div>
+        )}
 
         {/* Notes */}
         {order.notes && (

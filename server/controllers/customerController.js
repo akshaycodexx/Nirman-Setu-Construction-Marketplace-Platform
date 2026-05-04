@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
+const PlatformFee = require('../models/PlatformFee');
 const { createRazorpayOrder, verifySignature } = require('../utils/razorpay');
 const { sendPaymentConfirmation } = require('../utils/mailer');
 
@@ -285,6 +286,91 @@ exports.verifyPayment = async (req, res) => {
     sendPaymentConfirmation(order).catch(e => console.error('Payment email failed:', e.message));
 
     res.json({ message: 'Payment verified', order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/customer/dashboard-stats
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const orders = await Order.find({ customerId: req.customer._id })
+      .select('status quote payment category items delivery createdAt orderId')
+      .sort({ createdAt: -1 });
+
+    const totalSpent = orders.reduce((s, o) => s + (o.payment?.advanceAmount || 0), 0);
+    const totalQuoted = orders.filter(o => o.quote?.amount).reduce((s, o) => s + o.quote.amount, 0);
+    const active = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
+    const delivered = orders.filter(o => o.status === 'delivered');
+    const pendingAction = orders.filter(o => o.status === 'quoted' && o.payment?.status === 'none');
+
+    res.json({
+      totalOrders: orders.length,
+      activeCount: active.length,
+      deliveredCount: delivered.length,
+      totalSpent,
+      totalQuoted,
+      activeOrder: active[0] || null,
+      pendingPayment: pendingAction[0] || null,
+      recentOrders: orders.slice(0, 5),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/customer/orders/:orderId/fee
+exports.getOrderFee = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('_id');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const fee = await PlatformFee.findOne({ orderId: order._id, paidBy: 'customer', status: 'pending' });
+    res.json({ fee: fee || null });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/customer/orders/:orderId/fee/create
+exports.createFeePayment = async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('_id orderId');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const fee = await PlatformFee.findOne({ orderId: order._id, paidBy: 'customer', status: 'pending' });
+    if (!fee) return res.status(404).json({ message: 'No pending platform fee for this order' });
+
+    const rzpOrder = await createRazorpayOrder(fee.amount, `FEE-${order.orderId}`);
+    res.json({
+      razorpayOrderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      feeAmount: fee.amount,
+      feeId: fee._id,
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/customer/orders/:orderId/fee/verify
+exports.verifyFeePayment = async (req, res) => {
+  try {
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, feeId } = req.body;
+    const order = await Order.findOne({ orderId: req.params.orderId, customerId: req.customer._id }).select('_id');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const valid = verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    if (!valid) return res.status(400).json({ message: 'Payment verification failed' });
+
+    const fee = await PlatformFee.findByIdAndUpdate(feeId, {
+      status: 'paid',
+      paidAt: new Date(),
+      note: (await PlatformFee.findById(feeId))?.note + ` | Paid via Razorpay: ${razorpayPaymentId}`,
+    }, { new: true });
+
+    res.json({ message: 'Platform fee paid successfully', fee });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

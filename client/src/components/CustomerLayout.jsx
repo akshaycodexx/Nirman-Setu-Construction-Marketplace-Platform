@@ -7,6 +7,7 @@ import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight,
 const navLinks = [
   { to: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/customer/orders', icon: ClipboardList, label: 'My Orders' },
+  { to: '/customer/notifications', icon: Bell, label: 'Notifications' },
   { to: '/customer/profile', icon: Settings, label: 'Profile' },
 ];
 

@@ -7,6 +7,7 @@ const {
   reviewOrder, raiseComplaint,
   createPayment, verifyPayment,
   getNotifications, changePassword,
+  getDashboardStats, getOrderFee, createFeePayment, verifyFeePayment,
 } = require('../controllers/customerController');
 const { getMessages, sendMessage } = require('../controllers/chatController');
 
@@ -25,5 +26,9 @@ router.get('/orders/:orderId/messages', customerAuth, getMessages);
 router.post('/orders/:orderId/messages', customerAuth, sendMessage);
 router.post('/orders/:orderId/payment/create', customerAuth, createPayment);
 router.post('/orders/:orderId/payment/verify', customerAuth, verifyPayment);
+router.get('/dashboard-stats', customerAuth, getDashboardStats);
+router.get('/orders/:orderId/fee', customerAuth, getOrderFee);
+router.post('/orders/:orderId/fee/create', customerAuth, createFeePayment);
+router.post('/orders/:orderId/fee/verify', customerAuth, verifyFeePayment);
 
 module.exports = router;

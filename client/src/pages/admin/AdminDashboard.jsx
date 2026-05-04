@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee
 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 
@@ -57,6 +57,8 @@ export default function AdminDashboard() {
   const openComplaints = data?.openComplaints || 0;
   const highValueOrders = data?.highValueOrders || [];
   const riskSummary = data?.riskSummary || { yellow: 0, red: 0 };
+  const lateOrders = data?.lateOrders || [];
+  const platformFees = data?.platformFees || {};
 
   return (
     <AdminLayout>
@@ -91,7 +93,7 @@ export default function AdminDashboard() {
       {/* Risk alert */}
       {!loading && (riskSummary.red > 0 || riskSummary.yellow > 0) && (
         <Link to="/admin/orders?risk=red"
-          className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 mb-5 hover:bg-orange-100 transition-colors">
+          className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 mb-3 hover:bg-orange-100 transition-colors">
           <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0" />
           <span className="text-sm font-semibold text-orange-800">
             {riskSummary.red > 0 && <span className="text-red-700">{riskSummary.red} high-risk</span>}
@@ -100,6 +102,32 @@ export default function AdminDashboard() {
             {' '}active orders — verify before dispatch
           </span>
           <ArrowRight className="w-4 h-4 text-orange-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Late delivery alert */}
+      {!loading && lateOrders.length > 0 && (
+        <Link to="/admin/orders?status=dispatched"
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3 mb-3 hover:bg-red-100 transition-colors">
+          <CalendarClock className="w-4 h-4 text-red-500 shrink-0" />
+          <span className="text-sm font-semibold text-red-800">
+            {lateOrders.length} order{lateOrders.length > 1 ? 's' : ''} late —{' '}
+            delivery date nikal gayi: {lateOrders.slice(0, 2).map(o => o.orderId).join(', ')}
+            {lateOrders.length > 2 && ` +${lateOrders.length - 2} more`}
+          </span>
+          <ArrowRight className="w-4 h-4 text-red-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Pending platform fees alert */}
+      {!loading && platformFees.pendingCount > 0 && (
+        <Link to="/admin/fees"
+          className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-5 hover:bg-amber-100 transition-colors">
+          <BadgeIndianRupee className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-sm font-semibold text-amber-800">
+            {platformFees.pendingCount} pending platform fee{platformFees.pendingCount > 1 ? 's' : ''} — ₹{(platformFees.pendingTotal || 0).toLocaleString('en-IN')} due
+          </span>
+          <ArrowRight className="w-4 h-4 text-amber-400 ml-auto shrink-0" />
         </Link>
       )}
 

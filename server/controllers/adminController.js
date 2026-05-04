@@ -93,6 +93,21 @@ const getDashboard = async (req, res) => {
       Order.countDocuments({ customerRisk: 'red', status: { $nin: ['cancelled', 'delivered'] } }),
     ]);
 
+    // Late deliveries: confirmed/dispatched orders whose delivery date has passed
+    const today = new Date(); today.setHours(0,0,0,0);
+    const lateOrders = await Order.find({
+      status: { $in: ['confirmed', 'dispatched'] },
+      'delivery.date': { $lt: today },
+    }).select('orderId status category customer.name delivery.city delivery.date').sort({ 'delivery.date': 1 }).limit(10);
+
+    // Platform fee income this month
+    const PlatformFee = require('../models/PlatformFee');
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const [feePending, feeMonthly] = await Promise.all([
+      PlatformFee.aggregate([{ $match: { status: 'pending' } }, { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }]),
+      PlatformFee.aggregate([{ $match: { status: 'paid', paidAt: { $gte: monthStart } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    ]);
+
     res.json({
       success: true,
       stats: { total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers },
@@ -102,6 +117,8 @@ const getDashboard = async (req, res) => {
       recent,
       highValueOrders,
       riskSummary: { yellow: yellowOrders, red: redOrders },
+      lateOrders,
+      platformFees: { pendingTotal: feePending[0]?.total || 0, pendingCount: feePending[0]?.count || 0, monthlyCollected: feeMonthly[0]?.total || 0 },
     });
   } catch (err) {
     console.error('getDashboard error:', err);
@@ -651,7 +668,22 @@ const getAnalytics = async (req, res) => {
       ]),
     ]);
 
-    res.json({ success: true, monthly, categories, cities, topSuppliers });
+    // Profit = quote.amount - supplierPayout.amount for delivered + paid orders
+    const profitAgg = await Order.aggregate([
+      { $match: { status: 'delivered', 'quote.amount': { $exists: true }, 'supplierPayout.amount': { $exists: true }, 'supplierPayout.status': 'paid' } },
+      { $group: { _id: null, totalProfit: { $sum: { $subtract: ['$quote.amount', '$supplierPayout.amount'] } }, count: { $sum: 1 } } },
+    ]);
+    const PlatformFeeModel = require('../models/PlatformFee');
+    const feeIncomeAgg = await PlatformFeeModel.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+
+    res.json({
+      success: true, monthly, categories, cities, topSuppliers,
+      profit: { total: profitAgg[0]?.totalProfit || 0, ordersCount: profitAgg[0]?.count || 0 },
+      feeIncome: feeIncomeAgg[0]?.total || 0,
+    });
   } catch (err) {
     console.error('getAnalytics error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
