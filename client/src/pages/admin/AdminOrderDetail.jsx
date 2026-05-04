@@ -403,12 +403,24 @@ export default function AdminOrderDetail() {
               <UserCheck className="w-4 h-4 text-orange-500" /> Assign Supplier
             </h3>
             {order.supplierId ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
-                <p className="font-semibold text-green-800 flex items-center gap-1">
+              <div className={`rounded-xl p-3 text-sm border ${
+                order.supplierStatus === 'accepted' ? 'bg-green-50 border-green-200'
+                : order.supplierStatus === 'declined' ? 'bg-red-50 border-red-200'
+                : order.supplierStatus === 'pending' ? 'bg-amber-50 border-amber-200'
+                : 'bg-green-50 border-green-200'
+              }`}>
+                <p className={`font-semibold flex items-center gap-1 ${
+                  order.supplierStatus === 'declined' ? 'text-red-800'
+                  : order.supplierStatus === 'pending' ? 'text-amber-800'
+                  : 'text-green-800'
+                }`}>
                   <CheckCircle className="w-4 h-4" /> Assigned
+                  {order.supplierStatus === 'pending' && <span className="ml-1 text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">Awaiting Acceptance</span>}
+                  {order.supplierStatus === 'accepted' && <span className="ml-1 text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded-full">Accepted ✓</span>}
+                  {order.supplierStatus === 'declined' && <span className="ml-1 text-xs bg-red-200 text-red-800 px-1.5 py-0.5 rounded-full">Declined ✗</span>}
                 </p>
-                <p className="text-green-700 mt-1">{order.supplierId.name}</p>
-                <p className="text-green-600 text-xs">{order.supplierId.phone} · {order.supplierId.businessName}</p>
+                <p className="text-gray-700 mt-1">{order.supplierId.name}</p>
+                <p className="text-gray-500 text-xs">{order.supplierId.phone} · {order.supplierId.businessName}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -765,13 +777,24 @@ function PaymentCard({ order, setOrder, orderId }) {
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${p.cls}`}>{p.label}</span>
       </div>
       {order.payment?.advanceAmount ? (
-        <div className="text-sm space-y-1 text-gray-600">
-          <p>Advance: <strong className="text-gray-900">₹{order.payment.advanceAmount.toLocaleString('en-IN')}</strong></p>
+        <div className="text-sm space-y-1.5 text-gray-600">
+          <p>Advance paid: <strong className="text-gray-900">₹{order.payment.advanceAmount.toLocaleString('en-IN')}</strong></p>
+          {order.quote?.amount && order.payment.status === 'advance_paid' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-2">
+              <p className="text-xs text-blue-600 font-medium">Balance Due on Delivery</p>
+              <p className="text-xl font-black text-blue-900 mt-0.5">
+                ₹{(order.quote.amount - order.payment.advanceAmount).toLocaleString('en-IN')}
+              </p>
+              <p className="text-xs text-blue-500 mt-0.5">
+                ₹{order.quote.amount.toLocaleString('en-IN')} total − ₹{order.payment.advanceAmount.toLocaleString('en-IN')} advance
+              </p>
+            </div>
+          )}
           {order.payment.advancePaidAt && (
-            <p>Paid at: {new Date(order.payment.advancePaidAt).toLocaleString('en-IN')}</p>
+            <p className="text-xs text-gray-400">Advance paid: {new Date(order.payment.advancePaidAt).toLocaleString('en-IN')}</p>
           )}
           {order.payment.razorpayPaymentId && (
-            <p className="font-mono text-xs text-gray-400 mt-1 break-all">ID: {order.payment.razorpayPaymentId}</p>
+            <p className="font-mono text-xs text-gray-400 break-all">ID: {order.payment.razorpayPaymentId}</p>
           )}
         </div>
       ) : (

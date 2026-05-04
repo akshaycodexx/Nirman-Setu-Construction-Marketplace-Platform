@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
 import { useSocket } from '../../context/SocketContext';
-import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle, Camera } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle, Camera, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 const STATUS_STEPS = [
   { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Tumhe assign kiya gaya hai' },
@@ -26,6 +26,9 @@ export default function SupplierOrderDetail() {
   const [proofNote, setProofNote] = useState('');
   const [proofPhotoUrl, setProofPhotoUrl] = useState('');
   const [submittingProof, setSubmittingProof] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [responding, setResponding] = useState(false);
 
   const fetchOrder = () =>
     axios.get(`/api/supplier/orders/${orderId}`, { headers: getAuthHeaders() })
@@ -49,6 +52,30 @@ export default function SupplierOrderDetail() {
   }, [socketRef, orderId]);
 
   const nextStatus = order ? FLOW[FLOW.indexOf(order.status) + 1] : null;
+
+  const handleAccept = async () => {
+    setResponding(true);
+    try {
+      const { data } = await axios.put(`/api/supplier/orders/${orderId}/accept`, {}, { headers: getAuthHeaders() });
+      setOrder(data.order);
+      toast.success('Order accept kar liya!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Accept failed');
+    }
+    setResponding(false);
+  };
+
+  const handleDecline = async () => {
+    setResponding(true);
+    try {
+      const { data } = await axios.put(`/api/supplier/orders/${orderId}/decline`, { reason: declineReason }, { headers: getAuthHeaders() });
+      setOrder(data.order);
+      toast.success('Order decline kar diya. Admin ko pata chal gaya.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Decline failed');
+    }
+    setResponding(false);
+  };
 
   const handleStatusUpdate = async () => {
     if (!nextStatus) return;
@@ -109,6 +136,53 @@ export default function SupplierOrderDetail() {
           <p className="text-sm text-gray-400 mt-0.5">{new Date(order.createdAt).toLocaleString('en-IN')}</p>
         </div>
       </div>
+
+      {/* Accept / Decline banner */}
+      {order.supplierStatus === 'pending' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-0">
+          <div className="flex items-start gap-3 mb-4">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-800">Admin ne tumhe assign kiya hai — accept ya decline karo</p>
+              <p className="text-amber-600 text-sm mt-0.5">Decline karne par admin ko doosra supplier dhundhna hoga.</p>
+            </div>
+          </div>
+          {!showDeclineForm ? (
+            <div className="flex gap-3">
+              <button onClick={handleAccept} disabled={responding}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+                {responding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
+                Accept Karo
+              </button>
+              <button onClick={() => setShowDeclineForm(true)} disabled={responding}
+                className="flex-1 flex items-center justify-center gap-2 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2.5 rounded-xl text-sm transition-colors">
+                <ThumbsDown className="w-4 h-4" /> Decline Karo
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={declineReason}
+                onChange={e => setDeclineReason(e.target.value)}
+                placeholder="Kyu decline kar rahe ho? (optional)"
+                className="w-full border border-amber-300 bg-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowDeclineForm(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50">
+                  Wapas
+                </button>
+                <button onClick={handleDecline} disabled={responding}
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+                  {responding ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Confirm Decline
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">

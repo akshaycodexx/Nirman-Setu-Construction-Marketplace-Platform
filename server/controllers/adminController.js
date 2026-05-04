@@ -310,8 +310,8 @@ const assignSupplier = async (req, res) => {
     const order = await Order.findOneAndUpdate(
       { orderId: req.params.orderId },
       {
-        $set: { supplierId, status: 'confirmed' },
-        $push: { timeline: { status: 'confirmed', note: 'Supplier assigned', by: 'admin', at: new Date() } },
+        $set: { supplierId, status: 'confirmed', supplierStatus: 'pending' },
+        $push: { timeline: { status: 'confirmed', note: 'Supplier assigned — awaiting acceptance', by: 'admin', at: new Date() } },
       },
       { new: true, runValidators: false }
     );

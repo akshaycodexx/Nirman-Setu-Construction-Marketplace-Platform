@@ -334,9 +334,26 @@ export default function CustomerOrderDetail() {
             )}
 
             {order.payment.status === 'advance_paid' && (
+              <>
+                <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl p-3 text-sm">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>Advance of ₹{order.payment.advanceAmount?.toLocaleString('en-IN')} paid. Order confirmed!</span>
+                </div>
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Balance Due on Delivery (Cash)</p>
+                  <p className="text-2xl font-black text-blue-900 mt-1">
+                    ₹{(order.quote.amount - order.payment.advanceAmount).toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-xs text-blue-500 mt-0.5">
+                    Total ₹{order.quote.amount.toLocaleString('en-IN')} − Advance ₹{order.payment.advanceAmount.toLocaleString('en-IN')}
+                  </p>
+                </div>
+              </>
+            )}
+            {order.payment.status === 'fully_paid' && (
               <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl p-3 text-sm">
                 <CheckCircle className="w-4 h-4 shrink-0" />
-                <span>Advance of ₹{order.payment.advanceAmount?.toLocaleString('en-IN')} paid. Order confirmed!</span>
+                <span>Fully paid — ₹{order.quote.amount.toLocaleString('en-IN')}. Shukriya!</span>
               </div>
             )}
           </div>

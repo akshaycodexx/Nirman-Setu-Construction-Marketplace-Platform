@@ -224,4 +224,49 @@ const getUpcomingDeliveries = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile, submitDeliveryProof, getUpcomingDeliveries };
+// PUT /api/supplier/orders/:orderId/accept
+const acceptOrder = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, supplierId: req.supplier._id, supplierStatus: 'pending' },
+      {
+        $set: { supplierStatus: 'accepted' },
+        $push: { timeline: { status: 'confirmed', note: 'Supplier ne order accept kiya', by: 'supplier', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found or already responded' });
+
+    const io = req.app.get('io');
+    if (io) io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PUT /api/supplier/orders/:orderId/decline
+const declineOrder = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, supplierId: req.supplier._id, supplierStatus: 'pending' },
+      {
+        $set: { supplierId: null, supplierStatus: null, status: 'pending' },
+        $push: { timeline: { status: 'pending', note: `Supplier ne decline kiya${reason ? `: ${reason}` : ''}`, by: 'supplier', at: new Date() } },
+      },
+      { new: true, runValidators: false }
+    );
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found or already responded' });
+
+    const io = req.app.get('io');
+    if (io) io.to('admin').emit('order:updated', { orderId: order.orderId, status: 'pending' });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile, submitDeliveryProof, getUpcomingDeliveries, acceptOrder, declineOrder };

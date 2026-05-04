@@ -37,6 +37,7 @@ const orderSchema = new mongoose.Schema({
   },
   adminNote: { type: String },
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null },
+  supplierStatus: { type: String, enum: ['pending', 'accepted', 'declined'], default: null },
   supplierNote: { type: String },
   quote: {
     amount: Number,
