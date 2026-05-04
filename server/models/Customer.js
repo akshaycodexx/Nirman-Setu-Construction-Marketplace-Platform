@@ -11,6 +11,8 @@ const customerSchema = new mongoose.Schema({
     area: String,
     pincode: String,
   },
+  cancelCount: { type: Number, default: 0 },
+  riskLevel: { type: String, enum: ['green', 'yellow', 'red'], default: 'green' },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

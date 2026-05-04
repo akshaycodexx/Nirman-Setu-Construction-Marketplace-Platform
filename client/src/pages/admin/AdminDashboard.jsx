@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star
 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 
@@ -55,6 +55,8 @@ export default function AdminDashboard() {
   const r = data?.revenue || {};
   const p = data?.payable || {};
   const openComplaints = data?.openComplaints || 0;
+  const highValueOrders = data?.highValueOrders || [];
+  const riskSummary = data?.riskSummary || { yellow: 0, red: 0 };
 
   return (
     <AdminLayout>
@@ -66,10 +68,38 @@ export default function AdminDashboard() {
       {/* Complaints alert */}
       {!loading && openComplaints > 0 && (
         <Link to="/admin/orders?complaints=open"
-          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3 mb-5 hover:bg-red-100 transition-colors">
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3 mb-3 hover:bg-red-100 transition-colors">
           <Flag className="w-4 h-4 text-red-500 shrink-0" />
           <span className="text-sm font-semibold text-red-700">{openComplaints} open complaint{openComplaints > 1 ? 's' : ''} — turant dhyan dein</span>
           <ArrowRight className="w-4 h-4 text-red-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* High-value orders alert */}
+      {!loading && highValueOrders.length > 0 && (
+        <Link to="/admin/orders?status=pending"
+          className="flex items-center gap-3 bg-yellow-50 border border-yellow-200 rounded-2xl px-5 py-3 mb-3 hover:bg-yellow-100 transition-colors">
+          <Star className="w-4 h-4 text-yellow-500 shrink-0 fill-yellow-400" />
+          <span className="text-sm font-semibold text-yellow-800">
+            {highValueOrders.length} high-value order{highValueOrders.length > 1 ? 's' : ''} pending —
+            {' '}₹{highValueOrders[0]?.quote?.amount?.toLocaleString('en-IN')} highest
+          </span>
+          <ArrowRight className="w-4 h-4 text-yellow-500 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Risk alert */}
+      {!loading && (riskSummary.red > 0 || riskSummary.yellow > 0) && (
+        <Link to="/admin/orders?risk=red"
+          className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 mb-5 hover:bg-orange-100 transition-colors">
+          <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0" />
+          <span className="text-sm font-semibold text-orange-800">
+            {riskSummary.red > 0 && <span className="text-red-700">{riskSummary.red} high-risk</span>}
+            {riskSummary.red > 0 && riskSummary.yellow > 0 && ' · '}
+            {riskSummary.yellow > 0 && <span className="text-yellow-700">{riskSummary.yellow} caution</span>}
+            {' '}active orders — verify before dispatch
+          </span>
+          <ArrowRight className="w-4 h-4 text-orange-400 ml-auto shrink-0" />
         </Link>
       )}
 
@@ -165,10 +195,12 @@ export default function AdminDashboard() {
                     <span className="font-mono text-sm font-bold text-gray-900">{order.orderId}</span>
                     <StatusBadge status={order.status} />
                     {order.quote?.amount && (
-                      <span className="text-xs text-gray-500 font-medium">
+                      <span className={`text-xs font-medium ${order.quote.amount >= 25000 ? 'text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded-full' : 'text-gray-500'}`}>
                         ₹{order.quote.amount.toLocaleString('en-IN')}
                       </span>
                     )}
+                    {order.customerRisk === 'red' && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">High Risk</span>}
+                    {order.customerRisk === 'yellow' && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Caution</span>}
                   </div>
                   <p className="text-sm text-gray-500 truncate">
                     {order.customer?.name} &bull; {order.delivery?.city} &bull;{' '}

@@ -248,13 +248,19 @@ export default function AdminSuppliers() {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [availFilter, setAvailFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [detailId, setDetailId] = useState(null);
 
-  const fetchSuppliers = async (q = '') => {
+  const fetchSuppliers = async ({ q = '', area = '', avail = 'all' } = {}) => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`/api/admin/suppliers${q ? `?search=${q}` : ''}`);
+      const params = new URLSearchParams();
+      if (q) params.set('search', q);
+      if (area) params.set('area', area);
+      if (avail !== 'all') params.set('availability', avail);
+      const { data } = await axios.get(`/api/admin/suppliers?${params}`);
       setSuppliers(data.suppliers);
     } catch {}
     setLoading(false);
@@ -307,17 +313,51 @@ export default function AdminSuppliers() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && fetchSuppliers(search)}
-          placeholder="Search by name, phone, business name..."
-          className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
+      {/* Search + Filters */}
+      <div className="space-y-2 mb-4">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
+              placeholder="Search by name, phone, business name..."
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+          <input
+            type="text"
+            value={areaFilter}
+            onChange={e => setAreaFilter(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
+            placeholder="Filter by area/city..."
+            className="w-40 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          />
+        </div>
+        <div className="flex gap-2 items-center">
+          <span className="text-xs font-medium text-gray-500">Availability:</span>
+          {[['all', 'All'], ['true', 'Available'], ['false', 'Busy']].map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => { setAvailFilter(val); fetchSuppliers({ q: search, area: areaFilter, avail: val }); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                availFilter === val
+                  ? val === 'true' ? 'bg-green-600 text-white' : val === 'false' ? 'bg-red-500 text-white' : 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            onClick={() => fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
+            className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+          >
+            Search
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -340,7 +380,12 @@ export default function AdminSuppliers() {
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${KYC_COLORS[sup.kycStatus]}`}>
                         {sup.kycStatus}
                       </span>
-                      {!sup.isActive && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Suspended</span>}
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        sup.availability ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {sup.availability ? 'Available' : 'Busy'}
+                      </span>
+                      {!sup.isActive && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Suspended</span>}
                     </div>
                     <p className="text-sm text-gray-500">
                       {sup.phone} {sup.businessName && `· ${sup.businessName}`}

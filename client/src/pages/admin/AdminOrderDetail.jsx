@@ -7,7 +7,7 @@ import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
-  Star, IndianRupee, Wallet, Flag
+  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation
 } from 'lucide-react';
 
 const adminAuthHeader = () => {
@@ -28,6 +28,8 @@ export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [nearbySuppliers, setNearbySuppliers] = useState([]);
+  const [customerInfo, setCustomerInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -67,6 +69,8 @@ export default function AdminOrderDetail() {
     axios.get(`/api/admin/orders/${orderId}`)
       .then(r => {
         setOrder(r.data.order);
+        setNearbySuppliers(r.data.nearbySuppliers || []);
+        setCustomerInfo(r.data.customerInfo || null);
         setNewStatus(r.data.order.status);
         setAdminNote(r.data.order.adminNote || '');
         if (r.data.order.quote) {
@@ -165,15 +169,46 @@ export default function AdminOrderDetail() {
         {/* Left col — order info */}
         <div className="lg:col-span-2 space-y-4">
 
+          {/* Customer risk warning */}
+          {(order.customerRisk === 'red' || order.customerRisk === 'yellow') && (
+            <div className={`rounded-2xl border p-4 flex items-start gap-3 ${
+              order.customerRisk === 'red'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-yellow-50 border-yellow-200'
+            }`}>
+              <ShieldAlert className={`w-5 h-5 shrink-0 mt-0.5 ${order.customerRisk === 'red' ? 'text-red-500' : 'text-yellow-500'}`} />
+              <div>
+                <p className={`font-semibold text-sm ${order.customerRisk === 'red' ? 'text-red-800' : 'text-yellow-800'}`}>
+                  {order.customerRisk === 'red' ? 'High-Risk Customer' : 'Caution — Repeat Canceller'}
+                </p>
+                <p className={`text-xs mt-0.5 ${order.customerRisk === 'red' ? 'text-red-600' : 'text-yellow-600'}`}>
+                  {customerInfo
+                    ? `Is customer ne ${customerInfo.cancelCount} baar cancel kiya hai — confirm karne se pehle call karo.`
+                    : 'Is customer ka cancellation record check karo.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Customer */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-orange-500" /> Customer Info
+              {customerInfo && (
+                <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  customerInfo.riskLevel === 'red' ? 'bg-red-100 text-red-700'
+                  : customerInfo.riskLevel === 'yellow' ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-green-100 text-green-700'
+                }`}>
+                  {customerInfo.riskLevel === 'green' ? 'Trusted' : customerInfo.riskLevel === 'yellow' ? 'Caution' : 'High Risk'}
+                </span>
+              )}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <InfoRow label="Name" value={order.customer?.name} />
               <InfoRow label="Phone" value={order.customer?.phone} copyable />
               {order.customer?.email && <InfoRow label="Email" value={order.customer.email} />}
+              {customerInfo && <InfoRow label="Cancel Count" value={`${customerInfo.cancelCount} time${customerInfo.cancelCount !== 1 ? 's' : ''}`} />}
             </div>
           </div>
 
@@ -275,6 +310,39 @@ export default function AdminOrderDetail() {
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Nearby suppliers quick-select */}
+                {nearbySuppliers.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                      <Navigation className="w-3 h-3 text-green-500" /> Same Area Suppliers (Fast Delivery)
+                    </p>
+                    <div className="space-y-1.5">
+                      {nearbySuppliers.map(s => (
+                        <button
+                          key={s._id}
+                          onClick={() => setSelectedSupplier(s._id)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm transition-colors text-left ${
+                            selectedSupplier === s._id
+                              ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
+                              : 'border-green-200 bg-green-50/50 hover:bg-green-50 text-gray-700'
+                          }`}
+                        >
+                          <div>
+                            <span className="font-medium">{s.name}</span>
+                            {s.businessName && <span className="text-gray-400 ml-1">· {s.businessName}</span>}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {s.availability
+                              ? <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Available</span>
+                              : <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">Busy</span>
+                            }
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2 mb-1">Or select from all suppliers:</p>
+                  </div>
+                )}
                 <select
                   value={selectedSupplier}
                   onChange={e => setSelectedSupplier(e.target.value)}

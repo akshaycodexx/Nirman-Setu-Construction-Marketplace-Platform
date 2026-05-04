@@ -8,10 +8,22 @@ const PAYMENT_BADGE = {
   fully_paid: 'bg-green-100 text-green-700',
 };
 
-import { ClipboardList, Search, ArrowRight, RefreshCw, Download, Flag } from 'lucide-react';
+import { ClipboardList, Search, ArrowRight, RefreshCw, Download, Flag, MapPin, ShieldAlert } from 'lucide-react';
 
 const STATUSES = ['all', 'pending', 'quoted', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
 const CATEGORIES = ['all', 'material', 'transport', 'equipment'];
+
+const RISK_CONFIG = {
+  green:  { label: 'Low Risk',    cls: 'bg-green-50 text-green-700 border border-green-200' },
+  yellow: { label: 'Caution',     cls: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  red:    { label: 'High Risk',   cls: 'bg-red-50 text-red-700 border border-red-200' },
+};
+
+const RISK_ROW = {
+  green:  '',
+  yellow: 'border-l-4 border-l-yellow-400',
+  red:    'border-l-4 border-l-red-500 bg-red-50/30',
+};
 
 export default function AdminOrders() {
   const [params, setParams] = useSearchParams();
@@ -23,6 +35,8 @@ export default function AdminOrders() {
   const category = params.get('category') || 'all';
   const search = params.get('search') || '';
   const complaints = params.get('complaints') || '';
+  const risk = params.get('risk') || 'all';
+  const city = params.get('city') || '';
   const page = Number(params.get('page') || 1);
 
   const fetchOrders = useCallback(async () => {
@@ -33,6 +47,8 @@ export default function AdminOrders() {
       if (category !== 'all') q.set('category', category);
       if (complaints) q.set('complaints', complaints);
       if (search) q.set('search', search);
+      if (risk !== 'all') q.set('risk', risk);
+      if (city) q.set('city', city);
       q.set('page', page);
       q.set('limit', 20);
       const { data } = await axios.get(`/api/admin/orders?${q}`);
@@ -40,7 +56,7 @@ export default function AdminOrders() {
       setTotal(data.total);
     } catch {}
     setLoading(false);
-  }, [status, category, search, complaints, page]);
+  }, [status, category, search, complaints, risk, city, page]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -92,17 +108,30 @@ export default function AdminOrders() {
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            defaultValue={search}
-            onKeyDown={e => e.key === 'Enter' && setFilter('search', e.target.value)}
-            onBlur={e => setFilter('search', e.target.value)}
-            placeholder="Search by Order ID, customer name, phone..."
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-          />
+        {/* Search + City */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              defaultValue={search}
+              onKeyDown={e => e.key === 'Enter' && setFilter('search', e.target.value)}
+              onBlur={e => setFilter('search', e.target.value)}
+              placeholder="Search by Order ID, customer name, phone..."
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+            />
+          </div>
+          <div className="relative w-40">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              defaultValue={city}
+              onKeyDown={e => e.key === 'Enter' && setFilter('city', e.target.value)}
+              onBlur={e => setFilter('city', e.target.value)}
+              placeholder="Filter by city..."
+              className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+            />
+          </div>
         </div>
 
         {/* Status tabs */}
@@ -132,19 +161,22 @@ export default function AdminOrders() {
           </button>
         </div>
 
-        {/* Category */}
-        <div className="flex gap-2">
-          {CATEGORIES.map(c => (
+        {/* Risk filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
+            <ShieldAlert className="w-3.5 h-3.5" /> Risk:
+          </span>
+          {['all', 'green', 'yellow', 'red'].map(r => (
             <button
-              key={c}
-              onClick={() => setFilter('category', c)}
+              key={r}
+              onClick={() => setFilter('risk', r)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                category === c
-                  ? 'bg-gray-900 text-white'
+                risk === r
+                  ? r === 'all' ? 'bg-gray-900 text-white' : r === 'green' ? 'bg-green-600 text-white' : r === 'yellow' ? 'bg-yellow-500 text-white' : 'bg-red-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {c}
+              {r === 'all' ? 'All' : r === 'green' ? 'Low Risk' : r === 'yellow' ? 'Caution' : 'High Risk'}
             </button>
           ))}
         </div>
@@ -178,13 +210,20 @@ export default function AdminOrders() {
                 <Link
                   key={order._id}
                   to={`/admin/orders/${order.orderId}`}
-                  className="grid grid-cols-12 items-center px-5 py-3.5 hover:bg-orange-50/40 transition-colors group"
+                  className={`grid grid-cols-12 items-center px-5 py-3.5 hover:bg-orange-50/40 transition-colors group ${RISK_ROW[order.customerRisk] || ''}`}
                 >
                   <div className="col-span-5 sm:col-span-2">
                     <span className="font-mono text-sm font-bold text-gray-900">{order.orderId}</span>
                   </div>
                   <div className="hidden sm:block col-span-3">
-                    <p className="text-sm font-medium text-gray-800 truncate">{order.customer?.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-medium text-gray-800 truncate">{order.customer?.name}</p>
+                      {order.customerRisk && order.customerRisk !== 'green' && (
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${RISK_CONFIG[order.customerRisk]?.cls}`}>
+                          {RISK_CONFIG[order.customerRisk]?.label}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {order.customer?.phone}
                       {order.quote?.amount ? ` · ₹${order.quote.amount.toLocaleString('en-IN')}` : ''}
@@ -195,6 +234,7 @@ export default function AdminOrders() {
                   </div>
                   <div className="hidden sm:block col-span-2">
                     <span className="text-sm text-gray-600">{order.delivery?.city}</span>
+                    {order.delivery?.pincode && <p className="text-xs text-gray-400">{order.delivery.pincode}</p>}
                   </div>
                   <div className="col-span-5 sm:col-span-2 flex justify-end sm:justify-start flex-wrap gap-1 items-center">
                     <StatusBadge status={order.status} />

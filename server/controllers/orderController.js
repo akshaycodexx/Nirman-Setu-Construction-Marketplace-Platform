@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Order = require('../models/Order');
+const Customer = require('../models/Customer');
 const { sendAdminNotification } = require('../utils/mailer');
 const { notifyNewOrder } = require('../utils/whatsapp');
 
@@ -13,15 +14,20 @@ const createOrder = async (req, res) => {
 
     // Optionally link to customer account if JWT present
     let customerId = null;
+    let customerRisk = 'green';
     const auth = req.headers.authorization;
     if (auth && auth.startsWith('Bearer ')) {
       try {
         const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
-        if (decoded.role === 'customer') customerId = decoded.id;
+        if (decoded.role === 'customer') {
+          customerId = decoded.id;
+          const cust = await Customer.findById(customerId).select('riskLevel');
+          if (cust) customerRisk = cust.riskLevel || 'green';
+        }
       } catch {}
     }
 
-    const order = new Order({ orderId, category, items, delivery, customer, notes, customerId });
+    const order = new Order({ orderId, category, items, delivery, customer, notes, customerId, customerRisk });
     await order.save();
 
     // notify admin — fire and forget

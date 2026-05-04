@@ -68,7 +68,14 @@ const getDashboard = async (req, res) => {
     const recent = await Order.find()
       .sort({ createdAt: -1 })
       .limit(8)
-      .select('orderId status category customer.name delivery.city createdAt quote.amount payment.status');
+      .select('orderId status category customer.name delivery.city createdAt quote.amount payment.status customerRisk');
+
+    // High-value pending orders (quote >= 25000)
+    const highValueOrders = await Order.find({
+      'quote.amount': { $gte: 25000 },
+      status: { $in: ['pending', 'quoted'] },
+    }).sort({ 'quote.amount': -1 }).limit(5)
+      .select('orderId status category customer.name delivery.city quote.amount createdAt');
 
     // Outstanding supplier payouts
     const payableResult = await Order.aggregate([
@@ -80,6 +87,12 @@ const getDashboard = async (req, res) => {
     // Open complaints
     const openComplaints = await Order.countDocuments({ 'complaint.text': { $exists: true }, 'complaint.status': 'open' });
 
+    // Risk summary: count of yellow + red orders
+    const [yellowOrders, redOrders] = await Promise.all([
+      Order.countDocuments({ customerRisk: 'yellow', status: { $nin: ['cancelled', 'delivered'] } }),
+      Order.countDocuments({ customerRisk: 'red', status: { $nin: ['cancelled', 'delivered'] } }),
+    ]);
+
     res.json({
       success: true,
       stats: { total, pending, quoted, confirmed, dispatched, delivered, cancelled, totalCustomers },
@@ -87,6 +100,8 @@ const getDashboard = async (req, res) => {
       payable: { count: payableSummary.count, total: payableSummary.total },
       openComplaints,
       recent,
+      highValueOrders,
+      riskSummary: { yellow: yellowOrders, red: redOrders },
     });
   } catch (err) {
     console.error('getDashboard error:', err);
@@ -97,10 +112,13 @@ const getDashboard = async (req, res) => {
 // GET /api/admin/orders
 const getOrders = async (req, res) => {
   try {
-    const { status, category, search, complaints, page = 1, limit = 20 } = req.query;
+    const { status, category, search, complaints, risk, city, pincode, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (status && status !== 'all') filter.status = status;
     if (category && category !== 'all') filter.category = category;
+    if (risk && risk !== 'all') filter.customerRisk = risk;
+    if (city) filter['delivery.city'] = { $regex: city, $options: 'i' };
+    if (pincode) filter['delivery.pincode'] = { $regex: pincode, $options: 'i' };
     if (complaints === 'open') {
       filter['complaint.text'] = { $exists: true };
       filter['complaint.status'] = 'open';
@@ -133,7 +151,25 @@ const getOrderById = async (req, res) => {
     const order = await Order.findOne({ orderId: req.params.orderId })
       .populate('supplierId', 'name phone businessName');
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    res.json({ success: true, order });
+
+    // Find suppliers in same city/area for smart matching
+    const orderCity = order.delivery?.city;
+    let nearbySuppliers = [];
+    if (orderCity) {
+      nearbySuppliers = await Supplier.find({
+        isActive: true,
+        kycStatus: 'verified',
+        serviceAreas: { $regex: orderCity, $options: 'i' },
+      }).select('name phone businessName serviceAreas availability categories').limit(10);
+    }
+
+    // Also fetch customer risk info if customerId exists
+    let customerInfo = null;
+    if (order.customerId) {
+      customerInfo = await Customer.findById(order.customerId).select('cancelCount riskLevel totalOrders');
+    }
+
+    res.json({ success: true, order, nearbySuppliers, customerInfo });
   } catch (err) {
     console.error('getOrderById error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -160,6 +196,21 @@ const updateStatus = async (req, res) => {
       { new: true, runValidators: false }
     );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    // When cancelled: increment customer cancel count and update risk level
+    if (status === 'cancelled' && order.customerId) {
+      const cust = await Customer.findById(order.customerId);
+      if (cust) {
+        cust.cancelCount = (cust.cancelCount || 0) + 1;
+        cust.riskLevel = cust.cancelCount >= 3 ? 'red' : cust.cancelCount === 2 ? 'yellow' : 'green';
+        await cust.save();
+        // Propagate new risk to all non-cancelled orders from this customer
+        await Order.updateMany(
+          { customerId: order.customerId, status: { $ne: 'cancelled' } },
+          { $set: { customerRisk: cust.riskLevel } }
+        );
+      }
+    }
 
     sendStatusNotification(order).catch(e => console.error('Status email failed:', e.message));
     notifyStatusUpdate(order);
@@ -311,9 +362,12 @@ const exportOrders = async (req, res) => {
 // GET /api/admin/suppliers
 const getSuppliers = async (req, res) => {
   try {
-    const { kycStatus, search } = req.query;
+    const { kycStatus, search, area, availability } = req.query;
     const filter = {};
     if (kycStatus && kycStatus !== 'all') filter.kycStatus = kycStatus;
+    if (area) filter.serviceAreas = { $regex: area, $options: 'i' };
+    if (availability === 'true') filter.availability = true;
+    if (availability === 'false') filter.availability = false;
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },

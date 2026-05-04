@@ -69,6 +69,7 @@ const orderSchema = new mongoose.Schema({
     resolution: { type: String },
     resolvedAt: { type: Date },
   },
+  customerRisk: { type: String, enum: ['green', 'yellow', 'red'], default: 'green' },
   timeline: [{
     status: String,
     note: String,
