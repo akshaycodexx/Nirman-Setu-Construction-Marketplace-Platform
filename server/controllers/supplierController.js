@@ -192,4 +192,36 @@ const updateAvailability = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile };
+// POST /api/supplier/orders/:orderId/proof
+const submitDeliveryProof = async (req, res) => {
+  try {
+    const { note, photoUrl } = req.body;
+    if (!note) return res.status(400).json({ success: false, message: 'Proof note required' });
+    const order = await Order.findOneAndUpdate(
+      { orderId: req.params.orderId, supplierId: req.supplier._id },
+      { $set: { deliveryProof: { note, photoUrl: photoUrl || '', submittedAt: new Date() } } },
+      { new: true, runValidators: false }
+    );
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// GET /api/supplier/upcoming — upcoming deliveries for calendar
+const getUpcomingDeliveries = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      supplierId: req.supplier._id,
+      status: { $in: ['confirmed', 'dispatched'] },
+      'delivery.date': { $gte: new Date() },
+    }).sort({ 'delivery.date': 1 }).limit(30)
+      .select('orderId status category delivery.city delivery.date delivery.slot');
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile, submitDeliveryProof, getUpcomingDeliveries };

@@ -6,7 +6,7 @@ const { notifyNewOrder } = require('../utils/whatsapp');
 
 const createOrder = async (req, res) => {
   try {
-    const { category, items, delivery, customer, notes } = req.body;
+    const { category, items, delivery, customer, notes, urgentDelivery } = req.body;
 
     const count = await Order.countDocuments();
     const year = new Date().getFullYear();
@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
       } catch {}
     }
 
-    const order = new Order({ orderId, category, items, delivery, customer, notes, customerId, customerRisk });
+    const order = new Order({ orderId, category, items, delivery, customer, notes, customerId, customerRisk, urgentDelivery: urgentDelivery || {} });
     await order.save();
 
     // notify admin — fire and forget

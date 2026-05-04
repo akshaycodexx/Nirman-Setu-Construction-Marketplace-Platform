@@ -7,6 +7,7 @@ const {
   getSuppliers, createSupplier, getSupplierById, updateSupplierKyc, toggleSupplier,
   resetSupplierPassword, changePassword,
   getAnalytics, getPayouts, getComplaints,
+  getCustomers, blockCustomer,
 } = require('../controllers/adminController');
 const { getMessages, sendMessage } = require('../controllers/chatController');
 
@@ -36,6 +37,10 @@ router.put('/orders/:orderId/assign-supplier', protect, assignSupplier);
 router.put('/orders/:orderId/payment', protect, markFullyPaid);
 router.patch('/orders/:orderId/supplier-payout', protect, markSupplierPayout);
 router.put('/orders/:orderId/complaint/resolve', protect, resolveComplaint);
+
+// Customers
+router.get('/customers', protect, getCustomers);
+router.put('/customers/:id/block', protect, blockCustomer);
 
 // Suppliers
 router.get('/suppliers', protect, getSuppliers);

@@ -456,12 +456,28 @@ const getSupplierById = async (req, res) => {
       Order.countDocuments({ supplierId: supplier._id, status: 'delivered' }),
     ]);
 
+    // Rating and earnings aggregation
+    const [ratingAgg, earningsAgg] = await Promise.all([
+      Order.aggregate([
+        { $match: { supplierId: supplier._id, 'review.rating': { $exists: true, $ne: null } } },
+        { $group: { _id: null, avg: { $avg: '$review.rating' }, count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: { supplierId: supplier._id, 'supplierPayout.status': 'paid' } },
+        { $group: { _id: null, total: { $sum: '$supplierPayout.amount' } } },
+      ]),
+    ]);
+
+    const avgRating = ratingAgg[0]?.avg ? parseFloat(ratingAgg[0].avg.toFixed(1)) : null;
+    const ratingCount = ratingAgg[0]?.count || 0;
+    const earnings = earningsAgg[0]?.total || 0;
+
     const recentOrders = await Order.find({ supplierId: supplier._id })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('orderId status category delivery.city delivery.date createdAt');
 
-    res.json({ success: true, supplier, stats: { total, confirmed, dispatched, delivered }, recentOrders });
+    res.json({ success: true, supplier, stats: { total, confirmed, dispatched, delivered, avgRating, ratingCount, earnings }, recentOrders });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -692,6 +708,57 @@ const getPayouts = async (req, res) => {
   }
 };
 
+// GET /api/admin/customers
+const getCustomers = async (req, res) => {
+  try {
+    const { risk, search, page = 1, limit = 20 } = req.query;
+    const filter = {};
+    if (risk && risk !== 'all') filter.riskLevel = risk;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const total = await Customer.countDocuments(filter);
+    const customers = await Customer.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const withStats = await Promise.all(customers.map(async (c) => {
+      const [totalOrders, delivered, cancelled] = await Promise.all([
+        Order.countDocuments({ customerId: c._id }),
+        Order.countDocuments({ customerId: c._id, status: 'delivered' }),
+        Order.countDocuments({ customerId: c._id, status: 'cancelled' }),
+      ]);
+      return { ...c.toObject(), orderStats: { total: totalOrders, delivered, cancelled } };
+    }));
+
+    res.json({ success: true, customers: withStats, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('getCustomers error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PUT /api/admin/customers/:id/block
+const blockCustomer = async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      { isActive },
+      { new: true }
+    ).select('-password');
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    res.json({ success: true, customer });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   login, getMe, getDashboard, getOrders, getOrderById, exportOrders, updateStatus, sendQuote,
   assignSupplier, markFullyPaid,
@@ -699,4 +766,5 @@ module.exports = {
   resetSupplierPassword, changePassword,
   getNotifications, markSupplierPayout, resolveComplaint,
   getAnalytics, getPayouts, getComplaints,
+  getCustomers, blockCustomer,
 };

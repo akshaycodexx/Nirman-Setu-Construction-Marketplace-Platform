@@ -6,7 +6,8 @@ import { useCustomer } from '../../context/CustomerContext';
 import { useSocket } from '../../context/SocketContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
 import ChatPanel from '../../components/ChatPanel';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star, Flag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star, Flag, RotateCcw } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -23,6 +24,7 @@ function loadRazorpayScript() {
 
 export default function CustomerOrderDetail() {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const { customer, authHeader } = useCustomer();
   const socketRef = useSocket();
   const [order, setOrder] = useState(null);
@@ -211,6 +213,17 @@ export default function CustomerOrderDetail() {
                 className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors">
                 <Receipt className="w-3 h-3" /> Receipt
               </Link>
+            )}
+            {(order.status === 'delivered' || order.status === 'cancelled') && (
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('reorder_items', JSON.stringify(order.items));
+                  navigate(`/request?category=${order.category}`);
+                }}
+                className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" /> Re-order
+              </button>
             )}
             {canCancel && (
               <button onClick={handleCancel} disabled={cancelling}

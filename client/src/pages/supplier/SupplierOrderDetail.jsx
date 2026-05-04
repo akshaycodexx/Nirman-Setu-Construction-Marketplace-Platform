@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
 import { useSocket } from '../../context/SocketContext';
-import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle, Camera } from 'lucide-react';
 
 const STATUS_STEPS = [
   { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Tumhe assign kiya gaya hai' },
@@ -23,6 +23,9 @@ export default function SupplierOrderDetail() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [note, setNote] = useState('');
+  const [proofNote, setProofNote] = useState('');
+  const [proofPhotoUrl, setProofPhotoUrl] = useState('');
+  const [submittingProof, setSubmittingProof] = useState(false);
 
   const fetchOrder = () =>
     axios.get(`/api/supplier/orders/${orderId}`, { headers: getAuthHeaders() })
@@ -221,6 +224,69 @@ export default function SupplierOrderDetail() {
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
               <p className="font-semibold text-green-800">Order Complete!</p>
               <p className="text-sm text-green-600 mt-1">Successfully delivered</p>
+            </div>
+          )}
+
+          {/* Delivery Proof */}
+          {order.status === 'delivered' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-emerald-500" /> Delivery Proof
+              </h3>
+              {order.deliveryProof?.submittedAt ? (
+                <div className="space-y-2 text-sm">
+                  <p className="text-gray-600 bg-gray-50 rounded-xl p-3">{order.deliveryProof.note || 'No note'}</p>
+                  {order.deliveryProof.photoUrl && (
+                    <a href={order.deliveryProof.photoUrl} target="_blank" rel="noreferrer"
+                      className="block text-blue-500 hover:underline text-xs break-all">
+                      View Photo
+                    </a>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    Submitted: {new Date(order.deliveryProof.submittedAt).toLocaleString('en-IN')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    value={proofNote}
+                    onChange={e => setProofNote(e.target.value)}
+                    placeholder="Delivery note — e.g. Customer ne ghar ke bahar receive kiya"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                  />
+                  <input
+                    type="url"
+                    value={proofPhotoUrl}
+                    onChange={e => setProofPhotoUrl(e.target.value)}
+                    placeholder="Photo URL (optional — Google Drive, WhatsApp, etc.)"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!proofNote.trim()) { toast.error('Note likhein'); return; }
+                      setSubmittingProof(true);
+                      try {
+                        const { data } = await axios.post(
+                          `/api/supplier/orders/${orderId}/proof`,
+                          { note: proofNote, photoUrl: proofPhotoUrl },
+                          { headers: getAuthHeaders() }
+                        );
+                        setOrder(data.order);
+                        toast.success('Delivery proof submit ho gaya!');
+                      } catch (err) {
+                        toast.error(err.response?.data?.message || 'Submit failed');
+                      } finally {
+                        setSubmittingProof(false);
+                      }
+                    }}
+                    disabled={submittingProof || !proofNote.trim()}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    {submittingProof ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : <><Camera className="w-4 h-4" /> Submit Proof</>}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

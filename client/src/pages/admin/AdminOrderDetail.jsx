@@ -7,7 +7,7 @@ import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
-  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation
+  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap
 } from 'lucide-react';
 
 const adminAuthHeader = () => {
@@ -152,9 +152,17 @@ export default function AdminOrderDetail() {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold text-gray-900 font-mono">{order.orderId}</h1>
             <StatusBadge status={order.status} />
+            {order.urgentDelivery?.isUrgent && (
+              <span className="flex items-center gap-1 text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
+                <Zap className="w-3 h-3" /> Urgent
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-400 mt-0.5">
             {new Date(order.createdAt).toLocaleString('en-IN')}
+            {order.urgentDelivery?.surcharge > 0 && (
+              <span className="ml-2 text-red-500 font-medium">+₹{order.urgentDelivery.surcharge.toLocaleString('en-IN')} urgent surcharge</span>
+            )}
           </p>
         </div>
         {order.quote?.amount && (

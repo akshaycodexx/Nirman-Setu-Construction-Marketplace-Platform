@@ -70,6 +70,15 @@ const orderSchema = new mongoose.Schema({
     resolvedAt: { type: Date },
   },
   customerRisk: { type: String, enum: ['green', 'yellow', 'red'], default: 'green' },
+  urgentDelivery: {
+    isUrgent: { type: Boolean, default: false },
+    surcharge: { type: Number, default: 0 },
+  },
+  deliveryProof: {
+    note: { type: String },
+    photoUrl: { type: String },
+    submittedAt: { type: Date },
+  },
   timeline: [{
     status: String,
     note: String,

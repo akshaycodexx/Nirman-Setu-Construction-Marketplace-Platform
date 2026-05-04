@@ -11,6 +11,7 @@ const navLinks = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
   { to: '/admin/suppliers', icon: Users, label: 'Suppliers' },
+  { to: '/admin/customers', icon: HardHat, label: 'Customers' },
   { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
   { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
   { to: '/admin/complaints', icon: AlertTriangle, label: 'Complaints' },

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
-import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee } from 'lucide-react';
+import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee, CalendarDays } from 'lucide-react';
 
 const STATUS_COLORS = {
   confirmed: 'bg-indigo-100 text-indigo-700',
@@ -17,12 +17,16 @@ export default function SupplierDashboard() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [available, setAvailable] = useState(supplier?.availability ?? true);
+  const [upcoming, setUpcoming] = useState([]);
 
   useEffect(() => {
     axios.get('/api/supplier/dashboard', { headers: getAuthHeaders() })
       .then(r => setData(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
+    axios.get('/api/supplier/upcoming', { headers: getAuthHeaders() })
+      .then(r => setUpcoming(r.data.orders || []))
+      .catch(() => {});
   }, []);
 
   const toggleAvailability = async () => {
@@ -106,6 +110,46 @@ export default function SupplierDashboard() {
           <p className="text-xs text-green-600 mt-0.5">Paid payouts</p>
         </div>
       </div>
+
+      {/* Upcoming Deliveries */}
+      {upcoming.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
+            <CalendarDays className="w-4 h-4 text-emerald-500" />
+            <h2 className="font-semibold text-gray-900">Upcoming Deliveries</h2>
+            <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{upcoming.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {upcoming.map(order => {
+              const dDate = new Date(order.delivery?.date);
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+              const urgency = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `${diff}d left`;
+              const urgencyColor = diff <= 1 ? 'text-red-600 bg-red-50' : diff <= 3 ? 'text-orange-600 bg-orange-50' : 'text-gray-500 bg-gray-50';
+              return (
+                <Link key={order._id} to={`/supplier/orders/${order.orderId}`}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors group">
+                  <div className={`text-center rounded-xl px-3 py-1.5 text-xs font-bold shrink-0 ${urgencyColor}`}>
+                    <p>{dDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                    <p>{urgency}</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-mono text-sm font-bold text-gray-900">{order.orderId}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {order.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 capitalize">{order.category} &bull; {order.delivery?.city} &bull; {order.delivery?.slot}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-400 shrink-0" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent orders */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

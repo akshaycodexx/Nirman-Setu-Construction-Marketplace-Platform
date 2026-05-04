@@ -331,6 +331,7 @@ export default function RequestOrder() {
     delivery: { address: '', city: '', pincode: '', date: '', slot: 'anytime' },
     customer: { name: '', phone: '', email: '' },
     notes: '',
+    isUrgent: false,
   });
 
   useEffect(() => {
@@ -392,6 +393,7 @@ export default function RequestOrder() {
           quantity: Number(it.quantity),
           unit: it.unit,
         })),
+        urgentDelivery: { isUrgent: form.isUrgent },
       };
       const customerToken = localStorage.getItem('customerToken');
       const headers = customerToken ? { Authorization: `Bearer ${customerToken}` } : {};
@@ -639,6 +641,29 @@ export default function RequestOrder() {
                     ))}
                   </div>
                 </div>
+
+                {/* Urgent delivery */}
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, isUrgent: !f.isUrgent }))}
+                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                    form.isUrgent
+                      ? 'border-red-400 bg-red-50'
+                      : 'border-gray-100 hover:border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                    form.isUrgent ? 'bg-red-500 border-red-500' : 'border-gray-300'
+                  }`}>
+                    {form.isUrgent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold ${form.isUrgent ? 'text-red-700' : 'text-gray-700'}`}>
+                      Urgent Delivery (Aaj ya Kal)
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">Extra charges laag sakti hain — admin confirm karega</p>
+                  </div>
+                </button>
               </div>
             </div>
           )}
