@@ -253,10 +253,16 @@ export default function CustomerOrderDetail() {
             <StatusBadge status={order.status} />
             {order.payment.status !== 'none' && <PaymentBadge status={order.payment.status} />}
             {canReceipt && (
-              <Link to={`/receipt/${order.orderId}`} target="_blank"
-                className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors">
-                <Receipt className="w-3 h-3" /> Receipt
-              </Link>
+              <>
+                <Link to={`/receipt/${order.orderId}`} target="_blank"
+                  className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors">
+                  <Receipt className="w-3 h-3" /> Receipt
+                </Link>
+                <Link to={`/invoice/${order.orderId}`} target="_blank"
+                  className="flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700 border border-orange-200 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors">
+                  <Receipt className="w-3 h-3" /> GST Invoice
+                </Link>
+              </>
             )}
             {(order.status === 'delivered' || order.status === 'cancelled') && (
               <button

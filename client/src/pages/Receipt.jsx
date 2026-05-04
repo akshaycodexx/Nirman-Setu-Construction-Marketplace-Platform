@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { HardHat, Printer, MapPin, Calendar, Phone, Mail, Package, ArrowLeft, CheckCircle } from 'lucide-react';
+import { HardHat, Printer, MapPin, Calendar, Phone, Mail, Package, ArrowLeft, CheckCircle, FileText } from 'lucide-react';
 
 export default function Receipt() {
   const { orderId } = useParams();
@@ -54,6 +54,7 @@ export default function Receipt() {
   const balance = total > 0 ? total - advance : null;
   const fullyPaid = order.payment?.status === 'fully_paid';
   const advancePaid = order.payment?.status === 'advance_paid';
+  const surcharge = order.urgentDelivery?.surcharge || 0;
 
   return (
     <>
@@ -74,12 +75,18 @@ export default function Receipt() {
           <Link to={-1} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-          >
-            <Printer className="w-4 h-4" /> Print / Save PDF
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to={`/invoice/${order.orderId}`}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
+              <FileText className="w-4 h-4" /> GST Invoice
+            </Link>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              <Printer className="w-4 h-4" /> Print / Save PDF
+            </button>
+          </div>
         </div>
 
         {/* Receipt Card */}
@@ -204,9 +211,15 @@ export default function Receipt() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Payment Summary</p>
                   <div className="bg-gray-50 rounded-xl overflow-hidden">
                     <div className="px-5 py-3 flex justify-between text-sm border-b border-gray-100">
-                      <span className="text-gray-600">Total Quote Amount</span>
+                      <span className="text-gray-600">Quote Amount</span>
                       <span className="font-bold text-gray-900">₹{total.toLocaleString('en-IN')}</span>
                     </div>
+                    {surcharge > 0 && (
+                      <div className="px-5 py-3 flex justify-between text-sm border-b border-gray-100 bg-red-50">
+                        <span className="text-red-600 flex items-center gap-1">⚡ Urgent Delivery Surcharge</span>
+                        <span className="font-bold text-red-600">₹{surcharge.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                     {advance > 0 && (
                       <div className="px-5 py-3 flex justify-between text-sm border-b border-gray-100">
                         <span className="text-gray-600">Advance Paid <span className="text-gray-400 font-normal">(30%)</span></span>

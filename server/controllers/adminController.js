@@ -100,6 +100,13 @@ const getDashboard = async (req, res) => {
       'delivery.date': { $lt: today },
     }).select('orderId status category customer.name delivery.city delivery.date').sort({ 'delivery.date': 1 }).limit(10);
 
+    // Supplier-declined orders: pending orders with no supplier where timeline has a decline entry
+    const declinedOrders = await Order.find({
+      status: 'pending',
+      supplierId: null,
+      'timeline.note': { $regex: 'decline', $options: 'i' },
+    }).select('orderId category customer.name delivery.city').sort({ updatedAt: -1 }).limit(10);
+
     // Platform fee income this month
     const PlatformFee = require('../models/PlatformFee');
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
@@ -118,6 +125,7 @@ const getDashboard = async (req, res) => {
       highValueOrders,
       riskSummary: { yellow: yellowOrders, red: redOrders },
       lateOrders,
+      declinedOrders,
       platformFees: { pendingTotal: feePending[0]?.total || 0, pendingCount: feePending[0]?.count || 0, monthlyCollected: feeMonthly[0]?.total || 0 },
     });
   } catch (err) {

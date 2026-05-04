@@ -41,6 +41,7 @@ import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerOrderDetail from './pages/customer/CustomerOrderDetail';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import CustomerNotifications from './pages/customer/CustomerNotifications';
+import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
 function AdminGuard({ children }) {
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="/track" element={<TrackOrder />} />
             <Route path="/track/:orderId" element={<TrackOrder />} />
             <Route path="/receipt/:orderId" element={<Receipt />} />
+            <Route path="/invoice/:orderId" element={<Invoice />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
 

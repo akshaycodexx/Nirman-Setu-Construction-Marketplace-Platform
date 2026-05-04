@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee, ThumbsDown
 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 
@@ -58,6 +58,7 @@ export default function AdminDashboard() {
   const highValueOrders = data?.highValueOrders || [];
   const riskSummary = data?.riskSummary || { yellow: 0, red: 0 };
   const lateOrders = data?.lateOrders || [];
+  const declinedOrders = data?.declinedOrders || [];
   const platformFees = data?.platformFees || {};
 
   return (
@@ -102,6 +103,20 @@ export default function AdminDashboard() {
             {' '}active orders — verify before dispatch
           </span>
           <ArrowRight className="w-4 h-4 text-orange-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Supplier declined — reassign needed */}
+      {!loading && declinedOrders.length > 0 && (
+        <Link to="/admin/orders?status=pending"
+          className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-2xl px-5 py-3 mb-3 hover:bg-purple-100 transition-colors">
+          <ThumbsDown className="w-4 h-4 text-purple-500 shrink-0" />
+          <span className="text-sm font-semibold text-purple-800">
+            {declinedOrders.length} order{declinedOrders.length > 1 ? 's' : ''} supplier ne decline kiya — reassign karo:{' '}
+            {declinedOrders.slice(0, 2).map(o => o.orderId).join(', ')}
+            {declinedOrders.length > 2 && ` +${declinedOrders.length - 2} more`}
+          </span>
+          <ArrowRight className="w-4 h-4 text-purple-400 ml-auto shrink-0" />
         </Link>
       )}
 
