@@ -35,6 +35,7 @@ const supplierSchema = new mongoose.Schema({
 
   availability: { type: Boolean, default: true },
   isActive: { type: Boolean, default: true },
+  selfRegistered: { type: Boolean, default: false },
 
   notes: { type: String },
 }, { timestamps: true });

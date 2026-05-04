@@ -25,6 +25,7 @@ export default function SupplierOrderDetail() {
   const [note, setNote] = useState('');
   const [proofNote, setProofNote] = useState('');
   const [proofPhotoUrl, setProofPhotoUrl] = useState('');
+  const [proofFile, setProofFile] = useState(null);
   const [submittingProof, setSubmittingProof] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [showDeclineForm, setShowDeclineForm] = useState(false);
@@ -329,21 +330,35 @@ export default function SupplierOrderDetail() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
                   />
-                  <input
-                    type="url"
-                    value={proofPhotoUrl}
-                    onChange={e => setProofPhotoUrl(e.target.value)}
-                    placeholder="Photo URL (optional — Google Drive, WhatsApp, etc.)"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Photo Upload (optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setProofFile(e.target.files[0] || null)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:font-medium"
+                    />
+                    {proofFile && <p className="text-xs text-gray-400 mt-1">{proofFile.name}</p>}
+                  </div>
                   <button
                     onClick={async () => {
                       if (!proofNote.trim()) { toast.error('Note likhein'); return; }
                       setSubmittingProof(true);
                       try {
+                        let photoUrl = '';
+                        if (proofFile) {
+                          const formData = new FormData();
+                          formData.append('photo', proofFile);
+                          const { data: uploadData } = await axios.post(
+                            '/api/supplier/upload-proof',
+                            formData,
+                            { headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } }
+                          );
+                          photoUrl = uploadData.url;
+                        }
                         const { data } = await axios.post(
                           `/api/supplier/orders/${orderId}/proof`,
-                          { note: proofNote, photoUrl: proofPhotoUrl },
+                          { note: proofNote, photoUrl },
                           { headers: getAuthHeaders() }
                         );
                         setOrder(data.order);

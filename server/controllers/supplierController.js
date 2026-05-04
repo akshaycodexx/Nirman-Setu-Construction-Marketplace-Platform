@@ -1,10 +1,52 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const multer = require('multer');
 const Supplier = require('../models/Supplier');
 const Order = require('../models/Order');
 
+// Multer config — save to uploads/proofs/
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'uploads', 'proofs');
+    require('fs').mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) cb(null, true);
+  else cb(new Error('Only images allowed'));
+}});
+exports.uploadMiddleware = upload.single('photo');
+
 const signToken = (id) =>
   jwt.sign({ id, role: 'supplier' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+// POST /api/supplier/register (public — self-registration, requires admin approval)
+const register = async (req, res) => {
+  try {
+    const { name, phone, email, password, businessName, categories, serviceAreas } = req.body;
+    if (!name || !phone || !password) return res.status(400).json({ success: false, message: 'Name, phone and password required' });
+    if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    const exists = await Supplier.findOne({ phone });
+    if (exists) return res.status(409).json({ success: false, message: 'Phone already registered' });
+    await Supplier.create({
+      name, phone, email, password, businessName,
+      categories: categories || [],
+      serviceAreas: serviceAreas || [],
+      isActive: false,
+      selfRegistered: true,
+      kycStatus: 'pending',
+    });
+    res.status(201).json({ success: true, message: 'Registration submitted! Admin review ke baad login milega.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 // POST /api/supplier/login
 const login = async (req, res) => {
@@ -121,7 +163,7 @@ const updateOrderStatus = async (req, res) => {
 const getDashboard = async (req, res) => {
   try {
     const sid = req.supplier._id;
-    const [total, confirmed, dispatched, delivered, ratingResult, earningResult] = await Promise.all([
+    const [total, confirmed, dispatched, delivered, ratingResult, earningResult, pendingPayoutResult] = await Promise.all([
       Order.countDocuments({ supplierId: sid }),
       Order.countDocuments({ supplierId: sid, status: 'confirmed' }),
       Order.countDocuments({ supplierId: sid, status: 'dispatched' }),
@@ -134,26 +176,66 @@ const getDashboard = async (req, res) => {
         { $match: { supplierId: sid, 'supplierPayout.status': 'paid' } },
         { $group: { _id: null, total: { $sum: '$supplierPayout.amount' } } },
       ]),
+      Order.aggregate([
+        { $match: { supplierId: sid, 'payment.status': { $in: ['advance_paid', 'fully_paid'] }, 'supplierPayout.status': 'pending' } },
+        { $group: { _id: null, total: { $sum: '$payment.advanceAmount' }, count: { $sum: 1 } } },
+      ]),
     ]);
 
     const avgRating = ratingResult[0]?.avg ? +(ratingResult[0].avg.toFixed(1)) : null;
     const ratingCount = ratingResult[0]?.count || 0;
     const earnings = earningResult[0]?.total || 0;
+    const pendingPayout = { total: pendingPayoutResult[0]?.total || 0, count: pendingPayoutResult[0]?.count || 0 };
+
+    const pendingAcceptance = await Order.countDocuments({ supplierId: sid, supplierStatus: 'pending' });
 
     const recent = await Order.find({ supplierId: sid })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('orderId status category delivery.city delivery.date createdAt');
+      .select('orderId status category delivery.city delivery.date createdAt supplierStatus');
 
     res.json({
       success: true,
       stats: { total, confirmed, dispatched, delivered },
       performance: { avgRating, ratingCount, earnings },
+      pendingPayout,
+      pendingAcceptance,
       recent,
     });
   } catch (err) {
     console.error('supplier getDashboard error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// GET /api/supplier/earnings
+const getEarnings = async (req, res) => {
+  try {
+    const sid = req.supplier._id;
+    const orders = await Order.find({ supplierId: sid })
+      .select('orderId status category delivery.city createdAt payment.status payment.advanceAmount payment.advancePaidAt supplierPayout quote.amount')
+      .sort({ createdAt: -1 });
+
+    const totalEarned = orders.filter(o => o.supplierPayout?.status === 'paid')
+      .reduce((s, o) => s + (o.supplierPayout?.amount || 0), 0);
+    const totalPending = orders.filter(o => o.payment?.status !== 'none' && o.supplierPayout?.status === 'pending')
+      .reduce((s, o) => s + (o.payment?.advanceAmount || 0), 0);
+
+    res.json({ success: true, orders, totalEarned, totalPending });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// POST /api/supplier/upload-proof  — photo upload for delivery proof
+const uploadProof = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const url = `${baseUrl}/uploads/proofs/${req.file.filename}`;
+    res.json({ success: true, url });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -269,4 +351,4 @@ const declineOrder = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile, submitDeliveryProof, getUpcomingDeliveries, acceptOrder, declineOrder };
+module.exports = { register, login, getMe, getDashboard, getMyOrders, getOrderById, updateOrderStatus, updateAvailability, updateProfile, submitDeliveryProof, getUpcomingDeliveries, acceptOrder, declineOrder, getEarnings, uploadProof, uploadMiddleware };

@@ -28,10 +28,12 @@ import AdminFees from './pages/admin/AdminFees';
 
 // Supplier pages
 import SupplierLogin from './pages/supplier/SupplierLogin';
+import SupplierRegister from './pages/supplier/SupplierRegister';
 import SupplierDashboard from './pages/supplier/SupplierDashboard';
 import SupplierOrders from './pages/supplier/SupplierOrders';
 import SupplierOrderDetail from './pages/supplier/SupplierOrderDetail';
 import SupplierProfile from './pages/supplier/SupplierProfile';
+import SupplierEarnings from './pages/supplier/SupplierEarnings';
 
 // Customer pages
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -121,10 +123,12 @@ export default function App() {
 
             {/* Supplier */}
             <Route path="/supplier/login" element={<PublicSupplierGuard><SupplierLogin /></PublicSupplierGuard>} />
+            <Route path="/supplier/register" element={<SupplierRegister />} />
             <Route path="/supplier/dashboard" element={<SupplierGuard><SupplierDashboard /></SupplierGuard>} />
             <Route path="/supplier/orders" element={<SupplierGuard><SupplierOrders /></SupplierGuard>} />
             <Route path="/supplier/orders/:orderId" element={<SupplierGuard><SupplierOrderDetail /></SupplierGuard>} />
             <Route path="/supplier/profile" element={<SupplierGuard><SupplierProfile /></SupplierGuard>} />
+            <Route path="/supplier/earnings" element={<SupplierGuard><SupplierEarnings /></SupplierGuard>} />
             <Route path="/supplier" element={<Navigate to="/supplier/dashboard" replace />} />
 
             {/* Customer */}

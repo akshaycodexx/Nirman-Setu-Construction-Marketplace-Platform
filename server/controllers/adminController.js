@@ -107,6 +107,9 @@ const getDashboard = async (req, res) => {
       'timeline.note': { $regex: 'decline', $options: 'i' },
     }).select('orderId category customer.name delivery.city').sort({ updatedAt: -1 }).limit(10);
 
+    // Pending supplier self-registrations
+    const pendingRegistrations = await Supplier.countDocuments({ selfRegistered: true, kycStatus: 'pending', isActive: false });
+
     // Platform fee income this month
     const PlatformFee = require('../models/PlatformFee');
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
@@ -126,6 +129,7 @@ const getDashboard = async (req, res) => {
       riskSummary: { yellow: yellowOrders, red: redOrders },
       lateOrders,
       declinedOrders,
+      pendingRegistrations,
       platformFees: { pendingTotal: feePending[0]?.total || 0, pendingCount: feePending[0]?.count || 0, monthlyCollected: feeMonthly[0]?.total || 0 },
     });
   } catch (err) {
@@ -404,12 +408,15 @@ const exportOrders = async (req, res) => {
 // GET /api/admin/suppliers
 const getSuppliers = async (req, res) => {
   try {
-    const { kycStatus, search, area, availability } = req.query;
+    const { kycStatus, search, area, availability, selfRegistered, isActive } = req.query;
     const filter = {};
     if (kycStatus && kycStatus !== 'all') filter.kycStatus = kycStatus;
     if (area) filter.serviceAreas = { $regex: area, $options: 'i' };
     if (availability === 'true') filter.availability = true;
     if (availability === 'false') filter.availability = false;
+    if (selfRegistered === 'true') filter.selfRegistered = true;
+    if (isActive === 'false') filter.isActive = false;
+    if (isActive === 'true') filter.isActive = true;
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
-import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee, CalendarDays } from 'lucide-react';
+import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee, CalendarDays, AlertCircle, Clock } from 'lucide-react';
 
 const STATUS_COLORS = {
   confirmed: 'bg-indigo-100 text-indigo-700',
@@ -48,6 +48,8 @@ export default function SupplierDashboard() {
     { key: 'delivered', label: 'Delivered', icon: CheckCircle, color: 'bg-green-50 text-green-700' },
   ];
   const perf = data?.performance || {};
+  const pendingAcceptance = data?.pendingAcceptance || 0;
+  const pendingPayout = data?.pendingPayout || { total: 0, count: 0 };
 
   return (
     <SupplierLayout>
@@ -75,6 +77,30 @@ export default function SupplierDashboard() {
           }
         </button>
       </div>
+
+      {/* Pending acceptance banner */}
+      {!loading && pendingAcceptance > 0 && (
+        <Link to="/supplier/orders"
+          className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-4 hover:bg-amber-100 transition-colors">
+          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-sm font-semibold text-amber-800">
+            {pendingAcceptance} order{pendingAcceptance > 1 ? 's' : ''} tumhara response chahta hai — accept ya decline karo
+          </span>
+          <ArrowRight className="w-4 h-4 text-amber-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Pending payout banner */}
+      {!loading && pendingPayout.count > 0 && (
+        <Link to="/supplier/earnings"
+          className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mb-4 hover:bg-green-100 transition-colors">
+          <Clock className="w-4 h-4 text-green-600 shrink-0" />
+          <span className="text-sm font-semibold text-green-800">
+            ₹{pendingPayout.total.toLocaleString('en-IN')} payout pending — {pendingPayout.count} order{pendingPayout.count > 1 ? 's' : ''} ka payment aana baki hai
+          </span>
+          <ArrowRight className="w-4 h-4 text-green-500 ml-auto shrink-0" />
+        </Link>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

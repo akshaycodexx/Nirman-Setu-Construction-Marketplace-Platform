@@ -59,6 +59,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/admin/fees', feeRoutes);
+app.use('/uploads', require('express').static(require('path').join(__dirname, 'uploads')));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/config', (req, res) => res.json({ supportPhone: process.env.SUPPORT_PHONE || '919876543210' }));

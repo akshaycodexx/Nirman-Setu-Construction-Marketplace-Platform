@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
 import {
   Package, Clock, Truck, CheckCircle, XCircle,
-  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee, ThumbsDown
+  ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee, ThumbsDown, UserPlus
 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
 
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
   const lateOrders = data?.lateOrders || [];
   const declinedOrders = data?.declinedOrders || [];
   const platformFees = data?.platformFees || {};
+  const pendingRegistrations = data?.pendingRegistrations || 0;
 
   return (
     <AdminLayout>
@@ -103,6 +104,18 @@ export default function AdminDashboard() {
             {' '}active orders — verify before dispatch
           </span>
           <ArrowRight className="w-4 h-4 text-orange-400 ml-auto shrink-0" />
+        </Link>
+      )}
+
+      {/* Pending supplier registrations */}
+      {!loading && pendingRegistrations > 0 && (
+        <Link to="/admin/suppliers"
+          className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-5 py-3 mb-3 hover:bg-blue-100 transition-colors">
+          <UserPlus className="w-4 h-4 text-blue-500 shrink-0" />
+          <span className="text-sm font-semibold text-blue-800">
+            {pendingRegistrations} new supplier registration{pendingRegistrations > 1 ? 's' : ''} pending review
+          </span>
+          <ArrowRight className="w-4 h-4 text-blue-400 ml-auto shrink-0" />
         </Link>
       )}
 

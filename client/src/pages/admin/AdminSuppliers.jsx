@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
-import { Users, Plus, CheckCircle, XCircle, Clock, Search, X, Loader2, ToggleLeft, ToggleRight, Eye, Star, IndianRupee, TrendingUp } from 'lucide-react';
+import { Users, Plus, CheckCircle, XCircle, Clock, Search, X, Loader2, ToggleLeft, ToggleRight, Eye, Star, IndianRupee, TrendingUp, UserCheck, UserX } from 'lucide-react';
 
 const KYC_COLORS = {
   verified: 'bg-green-100 text-green-700',
@@ -268,12 +268,21 @@ function SupplierDetailModal({ supplierId, onClose }) {
 
 export default function AdminSuppliers() {
   const [suppliers, setSuppliers] = useState([]);
+  const [pendingRegs, setPendingRegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
   const [availFilter, setAvailFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [detailId, setDetailId] = useState(null);
+  const [approvingId, setApprovingId] = useState(null);
+
+  const fetchPendingRegs = async () => {
+    try {
+      const { data } = await axios.get('/api/admin/suppliers?selfRegistered=true&isActive=false&kycStatus=pending');
+      setPendingRegs(data.suppliers);
+    } catch {}
+  };
 
   const fetchSuppliers = async ({ q = '', area = '', avail = 'all' } = {}) => {
     setLoading(true);
@@ -283,12 +292,34 @@ export default function AdminSuppliers() {
       if (area) params.set('area', area);
       if (avail !== 'all') params.set('availability', avail);
       const { data } = await axios.get(`/api/admin/suppliers?${params}`);
-      setSuppliers(data.suppliers);
+      setSuppliers(data.suppliers.filter(s => !(s.selfRegistered && !s.isActive && s.kycStatus === 'pending')));
     } catch {}
     setLoading(false);
   };
 
-  useEffect(() => { fetchSuppliers(); }, []);
+  const handleApprove = async (id) => {
+    setApprovingId(id);
+    try {
+      await axios.put(`/api/admin/suppliers/${id}/kyc`, { kycStatus: 'verified' });
+      await axios.put(`/api/admin/suppliers/${id}/toggle`);
+      toast.success('Supplier approved!');
+      setPendingRegs(r => r.filter(s => s._id !== id));
+      fetchSuppliers();
+    } catch { toast.error('Failed'); }
+    setApprovingId(null);
+  };
+
+  const handleRejectReg = async (id) => {
+    setApprovingId(id + '_reject');
+    try {
+      await axios.put(`/api/admin/suppliers/${id}/kyc`, { kycStatus: 'rejected' });
+      toast.success('Registration rejected');
+      setPendingRegs(r => r.filter(s => s._id !== id));
+    } catch { toast.error('Failed'); }
+    setApprovingId(null);
+  };
+
+  useEffect(() => { fetchSuppliers(); fetchPendingRegs(); }, []);
 
   const handleKyc = async (id, kycStatus) => {
     try {
@@ -334,6 +365,67 @@ export default function AdminSuppliers() {
           <Plus className="w-4 h-4" /> Add Supplier
         </button>
       </div>
+
+      {/* Pending self-registrations */}
+      {pendingRegs.length > 0 && (
+        <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden mb-5">
+          <div className="px-5 py-4 border-b border-blue-100 bg-blue-50 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-500" />
+            <h2 className="font-semibold text-blue-800">Pending Registrations ({pendingRegs.length})</h2>
+            <span className="text-xs text-blue-500 ml-1">— Suppliers ne khud apply kiya, approval pending hai</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {pendingRegs.map(sup => (
+              <div key={sup._id} className="px-5 py-4 flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-semibold text-gray-900">{sup.name}</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Self Registered</span>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {sup.phone}
+                    {sup.email && ` · ${sup.email}`}
+                    {sup.businessName && ` · ${sup.businessName}`}
+                  </p>
+                  {sup.categories?.length > 0 && (
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {sup.categories.map(c => (
+                        <span key={c} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">{c}</span>
+                      ))}
+                      {sup.serviceAreas?.slice(0, 3).map(a => (
+                        <span key={a} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{a}</span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Applied: {new Date(sup.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => setDetailId(sup._id)}
+                    className="flex items-center gap-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-600 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                    <Eye className="w-3.5 h-3.5" /> View
+                  </button>
+                  <button
+                    onClick={() => handleApprove(sup._id)}
+                    disabled={approvingId === sup._id || approvingId === sup._id + '_reject'}
+                    className="flex items-center gap-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                    {approvingId === sup._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleRejectReg(sup._id)}
+                    disabled={approvingId === sup._id || approvingId === sup._id + '_reject'}
+                    className="flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                    {approvingId === sup._id + '_reject' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search + Filters */}
       <div className="space-y-2 mb-4">
