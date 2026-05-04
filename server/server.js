@@ -10,6 +10,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const customerRoutes = require('./routes/customerRoutes');
+const feeRoutes = require('./routes/feeRoutes');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -57,6 +58,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/admin/fees', feeRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/config', (req, res) => res.json({ supportPhone: process.env.SUPPORT_PHONE || '919876543210' }));

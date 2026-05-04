@@ -24,6 +24,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminPayouts from './pages/admin/AdminPayouts';
 import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminFees from './pages/admin/AdminFees';
 
 // Supplier pages
 import SupplierLogin from './pages/supplier/SupplierLogin';
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="/admin/payouts" element={<AdminGuard><AdminPayouts /></AdminGuard>} />
             <Route path="/admin/complaints" element={<AdminGuard><AdminComplaints /></AdminGuard>} />
             <Route path="/admin/customers" element={<AdminGuard><AdminCustomers /></AdminGuard>} />
+            <Route path="/admin/fees" element={<AdminGuard><AdminFees /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 

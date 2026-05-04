@@ -269,9 +269,26 @@ const sendQuote = async (req, res) => {
 // PUT /api/admin/orders/:orderId/assign-supplier
 const assignSupplier = async (req, res) => {
   try {
-    const { supplierId } = req.body;
+    const { supplierId, overrideBlock } = req.body;
     const supplier = await Supplier.findById(supplierId);
     if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
+
+    // Check pending platform fees for this supplier
+    if (!overrideBlock) {
+      const PlatformFee = require('../models/PlatformFee');
+      const pendingFees = await PlatformFee.find({ payerId: supplierId, paidBy: 'supplier', status: 'pending' }).lean();
+      if (pendingFees.length > 0) {
+        const pendingTotal = pendingFees.reduce((s, f) => s + f.amount, 0);
+        return res.status(402).json({
+          success: false,
+          blocked: true,
+          pendingCount: pendingFees.length,
+          pendingTotal,
+          fees: pendingFees,
+          message: `Supplier ka ₹${pendingTotal} platform fee pending hai`,
+        });
+      }
+    }
 
     const order = await Order.findOneAndUpdate(
       { orderId: req.params.orderId },

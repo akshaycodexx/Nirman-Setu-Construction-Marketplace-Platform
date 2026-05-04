@@ -7,7 +7,7 @@ import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
-  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap
+  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap, BadgeIndianRupee, X
 } from 'lucide-react';
 
 const adminAuthHeader = () => {
@@ -46,23 +46,73 @@ export default function AdminOrderDetail() {
   const [suppliers, setSuppliers] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [feeWarning, setFeeWarning] = useState(null); // { pendingCount, pendingTotal, fees }
+
+  // Platform fee state
+  const [platformFee, setPlatformFee] = useState(null);
+  const [feePaidBy, setFeePaidBy] = useState('supplier');
+  const [feeAmount, setFeeAmount] = useState('');
+  const [feeNote, setFeeNote] = useState('');
+  const [savingFee, setSavingFee] = useState(false);
 
   useEffect(() => {
     axios.get('/api/admin/suppliers').then(r => setSuppliers(r.data.suppliers || [])).catch(() => {});
   }, []);
 
-  const handleAssignSupplier = async () => {
-    if (!selectedSupplier) return;
+  useEffect(() => {
+    if (!orderId) return;
+    axios.get(`/api/admin/fees/order/${orderId}`)
+      .then(r => setPlatformFee(r.data.fee))
+      .catch(() => {});
+  }, [orderId]);
+
+  const doAssign = async (overrideBlock = false) => {
     setAssigning(true);
     try {
-      const { data } = await axios.put(`/api/admin/orders/${orderId}/assign-supplier`, { supplierId: selectedSupplier });
+      const { data } = await axios.put(`/api/admin/orders/${orderId}/assign-supplier`, { supplierId: selectedSupplier, overrideBlock });
       setOrder(data.order);
       setNewStatus('confirmed');
+      setFeeWarning(null);
       toast.success('Supplier assigned & order confirmed!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Assignment failed');
+      if (err.response?.status === 402 && err.response?.data?.blocked) {
+        setFeeWarning(err.response.data);
+      } else {
+        toast.error(err.response?.data?.message || 'Assignment failed');
+      }
     }
     setAssigning(false);
+  };
+
+  const handleAssignSupplier = () => { if (!selectedSupplier) return; doAssign(false); };
+
+  const handleCreateFee = async () => {
+    if (!feeAmount) { toast.error('Amount daalo'); return; }
+    setSavingFee(true);
+    try {
+      const { data } = await axios.post('/api/admin/fees', {
+        orderId: order._id,
+        paidBy: feePaidBy,
+        amount: Number(feeAmount),
+        note: feeNote,
+      });
+      setPlatformFee(data.fee);
+      setFeeAmount(''); setFeeNote('');
+      toast.success('Platform fee set ho gaya!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Fee set failed');
+    }
+    setSavingFee(false);
+  };
+
+  const handleFeeStatus = async (status, waivedReason = '') => {
+    try {
+      const { data } = await axios.patch(`/api/admin/fees/${platformFee._id}/status`, { status, waivedReason });
+      setPlatformFee(data.fee);
+      toast.success(status === 'paid' ? 'Fee mark paid!' : 'Fee waived!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Update failed');
+    }
   };
 
   useEffect(() => {
@@ -140,6 +190,50 @@ export default function AdminOrderDetail() {
 
   return (
     <AdminLayout>
+      {/* Fee Warning Modal */}
+      {feeWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Platform Fee Pending</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Is supplier ka fee baki hai</p>
+              </div>
+              <button onClick={() => setFeeWarning(null)} className="ml-auto text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              {feeWarning.fees?.map(f => (
+                <div key={f._id} className="flex justify-between text-sm mb-1 last:mb-0">
+                  <span className="text-amber-800">{f.orderRef || 'Standalone fee'}</span>
+                  <span className="font-bold text-amber-900">₹{f.amount.toLocaleString('en-IN')}</span>
+                </div>
+              ))}
+              <div className="border-t border-amber-200 mt-2 pt-2 flex justify-between text-sm font-bold">
+                <span className="text-amber-800">Total Pending</span>
+                <span className="text-amber-900">₹{feeWarning.pendingTotal?.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Phir bhi assign karna chahte ho?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setFeeWarning(null)}
+                className="flex-1 border border-gray-200 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
+                Ruko
+              </button>
+              <button onClick={() => doAssign(true)} disabled={assigning}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Phir Bhi Assign Karo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Back + header */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <button
@@ -452,6 +546,89 @@ export default function AdminOrderDetail() {
           {order.supplierId && (order.payment?.status === 'advance_paid' || order.payment?.status === 'fully_paid') && (
             <SupplierPayoutCard order={order} setOrder={setOrder} orderId={orderId} />
           )}
+
+          {/* Platform Fee */}
+          <div className={`rounded-2xl border shadow-sm p-5 ${
+            platformFee?.status === 'paid' ? 'bg-green-50 border-green-200'
+            : platformFee?.status === 'waived' ? 'bg-gray-50 border-gray-200'
+            : platformFee ? 'bg-amber-50 border-amber-200'
+            : 'bg-white border-gray-100'
+          }`}>
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <BadgeIndianRupee className="w-4 h-4 text-orange-500" /> Platform Fee
+              {platformFee && (
+                <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  platformFee.status === 'paid' ? 'bg-green-200 text-green-800'
+                  : platformFee.status === 'waived' ? 'bg-gray-200 text-gray-700'
+                  : 'bg-amber-200 text-amber-800'
+                }`}>
+                  {platformFee.status === 'paid' ? 'Paid ✅' : platformFee.status === 'waived' ? 'Waived' : 'Pending'}
+                </span>
+              )}
+            </h3>
+
+            {!platformFee ? (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">Call ke baad decide karo — kaun dega fee?</p>
+                <div className="flex gap-2">
+                  {['supplier', 'customer'].map(opt => (
+                    <button key={opt} onClick={() => setFeePaidBy(opt)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors capitalize ${
+                        feePaidBy === opt ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                      }`}>
+                      {opt === 'supplier' ? '🏗️ Supplier' : '👤 Customer'}
+                    </button>
+                  ))}
+                </div>
+                <input type="number" value={feeAmount} onChange={e => setFeeAmount(e.target.value)}
+                  placeholder="Amount (₹)"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                <input type="text" value={feeNote} onChange={e => setFeeNote(e.target.value)}
+                  placeholder="Note (optional) — e.g. Call pe agree kiya"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                <button onClick={handleCreateFee} disabled={savingFee || !feeAmount}
+                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                  {savingFee ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeIndianRupee className="w-4 h-4" />}
+                  Set Platform Fee
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Kaun dega</span>
+                  <span className="font-semibold capitalize">{platformFee.paidBy} — {platformFee.payerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Amount</span>
+                  <span className="font-bold text-lg text-gray-900">₹{platformFee.amount.toLocaleString('en-IN')}</span>
+                </div>
+                {platformFee.note && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Note</span>
+                    <span className="text-gray-700 italic text-right max-w-[60%]">{platformFee.note}</span>
+                  </div>
+                )}
+                {platformFee.paidAt && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Paid at</span>
+                    <span className="text-green-700">{new Date(platformFee.paidAt).toLocaleDateString('en-IN')}</span>
+                  </div>
+                )}
+                {platformFee.status === 'pending' && (
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => handleFeeStatus('paid')}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-xl text-sm transition-colors flex items-center justify-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5" /> Mark Paid
+                    </button>
+                    <button onClick={() => handleFeeStatus('waived', 'Admin waived')}
+                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 rounded-xl text-sm transition-colors">
+                      Waive
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AdminLayout>
