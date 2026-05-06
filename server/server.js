@@ -16,16 +16,18 @@ const quoteRoutes = require('./routes/quoteRoutes');
 const app = express();
 const httpServer = http.createServer(app);
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? [process.env.CLIENT_URL]
-  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+const isProd = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProd
+  ? [process.env.CLIENT_URL].filter(Boolean)
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', process.env.CLIENT_URL].filter(Boolean);
 
 const corsOptions = {
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-    else cb(new Error('Not allowed by CORS'));
+    else cb(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  credentials: true,
 };
 
 const io = new Server(httpServer, { cors: corsOptions });
