@@ -9,7 +9,11 @@ export function SocketProvider({ children }) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL, { autoConnect: true, reconnectionDelay: 1000 });
+    socketRef.current = io(SOCKET_URL, {
+      autoConnect: true,
+      reconnectionDelay: 2000,
+      reconnectionAttempts: 5,
+    });
     return () => socketRef.current?.disconnect();
   }, []);
 

@@ -11,16 +11,24 @@ const adminRoutes = require('./routes/adminRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const feeRoutes = require('./routes/feeRoutes');
+const quoteRoutes = require('./routes/quoteRoutes');
 
 const app = express();
 const httpServer = http.createServer(app);
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
+const allowedOrigins = process.env.CLIENT_URL
+  ? [process.env.CLIENT_URL]
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+    else cb(new Error('Not allowed by CORS'));
   },
-});
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+};
+
+const io = new Server(httpServer, { cors: corsOptions });
 
 // Make io available in controllers via req.app.get('io')
 app.set('io', io);
@@ -28,7 +36,7 @@ app.set('io', io);
 connectDB();
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Rate limiters
@@ -59,6 +67,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/admin/fees', feeRoutes);
+app.use('/api/quotes', quoteRoutes);
 app.use('/uploads', require('express').static(require('path').join(__dirname, 'uploads')));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -79,6 +88,10 @@ io.on('connection', (socket) => {
   // Supplier joins their personal room for assignment notifications
   socket.on('join:supplier', (supplierId) => {
     if (supplierId) socket.join(`supplier:${supplierId}`);
+  });
+
+  socket.on('join:customer', (customerId) => {
+    if (customerId) socket.join(`customer:${customerId}`);
   });
 
   socket.on('disconnect', () => {});

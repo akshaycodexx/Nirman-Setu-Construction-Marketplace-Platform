@@ -21,7 +21,7 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilt
   if (file.mimetype.startsWith('image/')) cb(null, true);
   else cb(new Error('Only images allowed'));
 }});
-exports.uploadMiddleware = upload.single('photo');
+const uploadMiddleware = upload.single('photo');
 
 const signToken = (id) =>
   jwt.sign({ id, role: 'supplier' }, process.env.JWT_SECRET, { expiresIn: '7d' });

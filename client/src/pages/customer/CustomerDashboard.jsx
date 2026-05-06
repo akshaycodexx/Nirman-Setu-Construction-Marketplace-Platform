@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
-import { ClipboardList, Plus, Package, CheckCircle, IndianRupee, Zap, ArrowRight, AlertCircle, CreditCard, Loader2 } from 'lucide-react';
+import { ClipboardList, Plus, Package, CheckCircle, IndianRupee, Zap, ArrowRight, AlertCircle, CreditCard, Loader2, MessageSquare } from 'lucide-react';
 
 export default function CustomerDashboard() {
   const { customer, authHeader } = useCustomer();
@@ -95,6 +95,10 @@ export default function CustomerDashboard() {
           <Link to="/customer/orders"
             className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
             <Package className="w-4 h-4" /> Sab Orders
+          </Link>
+          <Link to="/customer/quotes"
+            className="flex items-center gap-2 bg-orange-50 border border-orange-200 hover:bg-orange-100 text-orange-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
+            <MessageSquare className="w-4 h-4" /> Price Compare
           </Link>
         </div>
 

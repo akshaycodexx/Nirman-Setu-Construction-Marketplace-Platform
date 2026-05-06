@@ -34,6 +34,7 @@ import SupplierOrders from './pages/supplier/SupplierOrders';
 import SupplierOrderDetail from './pages/supplier/SupplierOrderDetail';
 import SupplierProfile from './pages/supplier/SupplierProfile';
 import SupplierEarnings from './pages/supplier/SupplierEarnings';
+import SupplierQuoteRequests from './pages/supplier/SupplierQuoteRequests';
 
 // Customer pages
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -43,6 +44,7 @@ import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerOrderDetail from './pages/customer/CustomerOrderDetail';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import CustomerNotifications from './pages/customer/CustomerNotifications';
+import CustomerQuotes from './pages/customer/CustomerQuotes';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -129,6 +131,7 @@ export default function App() {
             <Route path="/supplier/orders/:orderId" element={<SupplierGuard><SupplierOrderDetail /></SupplierGuard>} />
             <Route path="/supplier/profile" element={<SupplierGuard><SupplierProfile /></SupplierGuard>} />
             <Route path="/supplier/earnings" element={<SupplierGuard><SupplierEarnings /></SupplierGuard>} />
+            <Route path="/supplier/quotes" element={<SupplierGuard><SupplierQuoteRequests /></SupplierGuard>} />
             <Route path="/supplier" element={<Navigate to="/supplier/dashboard" replace />} />
 
             {/* Customer */}
@@ -139,6 +142,7 @@ export default function App() {
             <Route path="/customer/orders/:orderId" element={<CustomerGuard><CustomerOrderDetail /></CustomerGuard>} />
             <Route path="/customer/notifications" element={<CustomerGuard><CustomerNotifications /></CustomerGuard>} />
             <Route path="/customer/profile" element={<CustomerGuard><CustomerProfile /></CustomerGuard>} />
+            <Route path="/customer/quotes" element={<CustomerGuard><CustomerQuotes /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
 
             {/* 404 */}

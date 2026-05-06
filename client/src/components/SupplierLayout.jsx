@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSupplier } from '../context/SupplierContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings, Bell, IndianRupee } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings, Bell, IndianRupee, MessageSquare } from 'lucide-react';
 
 const navLinks = [
   { to: '/supplier/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/supplier/orders', icon: ClipboardList, label: 'My Orders' },
+  { to: '/supplier/quotes', icon: MessageSquare, label: 'Quote Requests' },
   { to: '/supplier/earnings', icon: IndianRupee, label: 'Earnings' },
   { to: '/supplier/profile', icon: Settings, label: 'Profile' },
 ];
