@@ -340,9 +340,9 @@ export default function Home() {
       </section>
 
       {/* ─── SUPPLIER JOIN SECTION ─── */}
-      <section className="relative bg-gradient-to-br from-gray-950 via-emerald-950/40 to-gray-950 py-16 md:py-20 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle at 75% 50%, #10b981 0%, transparent 55%)' }} />
+      <section className="relative bg-gray-950 py-16 md:py-20 text-white overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle at 85% 40%, rgba(5,150,105,0.08) 0%, transparent 50%)' }} />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
