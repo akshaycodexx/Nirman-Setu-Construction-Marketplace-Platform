@@ -12,6 +12,7 @@ const navLinks = [
   { to: '/admin/orders', icon: ClipboardList, label: 'Orders' },
   { to: '/admin/quotes', icon: MessageSquare, label: 'Quote Requests' },
   { to: '/admin/labour', icon: Hammer, label: 'Labour Requests' },
+  { to: '/admin/rates', icon: IndianRupee, label: 'Rate Board' },
   { to: '/admin/suppliers', icon: Users, label: 'Suppliers' },
   { to: '/admin/customers', icon: HardHat, label: 'Customers' },
   { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },

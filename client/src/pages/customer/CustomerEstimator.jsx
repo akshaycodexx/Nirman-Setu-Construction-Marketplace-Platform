@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import CustomerLayout from '../../components/CustomerLayout';
-import { Calculator, ArrowRight, Plus, Info, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Calculator, Plus, Info, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 
 const PROJECT_TYPES = [
   { id: 'house', label: 'Ghar (Residential)' },
@@ -72,19 +73,37 @@ function cftToCubicMeter(cft) { return +(cft * 0.0283168).toFixed(2); }
 function kgToTon(kg) { return +(kg / 1000).toFixed(2); }
 function litresToLitre(l) { return Math.ceil(l); }
 
-function MaterialRow({ name, qty, unit, priceRange, onRequest }) {
-  const [open, setOpen] = useState(false);
-  const minCost = Math.round(qty * priceRange.min);
-  const maxCost = Math.round(qty * priceRange.max);
+// Build live rate lookup: material key → { min, max, unit, isLive }
+function buildLiveLookup(liveRates) {
+  const MAP = { cement: ['cement'], sand: ['sand'], gitti: ['aggregate'], brick: ['brick'], steel: ['steel'] };
+  const lookup = {};
+  for (const [key, cats] of Object.entries(MAP)) {
+    const match = liveRates.find(r => cats.includes(r.category));
+    if (match) lookup[key] = { min: match.minRate, max: match.maxRate, unit: match.unit, isLive: true };
+  }
+  return lookup;
+}
+
+function MaterialRow({ name, qty, priceRange, liveRange, onRequest }) {
+  const range = liveRange || priceRange;
+  const minCost = Math.round(qty * range.min);
+  const maxCost = Math.round(qty * range.max);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3.5">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-sm">{MATERIAL_LABELS[name]}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-gray-900 text-sm">{MATERIAL_LABELS[name]}</p>
+            {liveRange && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                <Zap className="w-2.5 h-2.5" /> Live
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-500 mt-0.5">
             <span className="font-bold text-gray-800 text-base">{qty.toLocaleString('en-IN')}</span>
-            {' '}{priceRange.unit}
+            {' '}{range.unit}
           </p>
         </div>
         <div className="text-right mr-3">
@@ -107,6 +126,13 @@ export default function CustomerEstimator() {
   const [form, setForm] = useState({ area: '', floors: '1', projectType: 'house', quality: 'standard' });
   const [result, setResult] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [liveLookup, setLiveLookup] = useState({});
+
+  useEffect(() => {
+    axios.get('/api/rates').then(r => {
+      setLiveLookup(buildLiveLookup(r.data.rates || []));
+    }).catch(() => {});
+  }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -151,8 +177,9 @@ export default function CustomerEstimator() {
     });
   };
 
-  const totalMinCost = result?.items.reduce((s, i) => s + i.qty * PRICE_RANGE[i.name].min, 0);
-  const totalMaxCost = result?.items.reduce((s, i) => s + i.qty * PRICE_RANGE[i.name].max, 0);
+  const totalMinCost = result?.items.reduce((s, i) => s + i.qty * (liveLookup[i.name] || PRICE_RANGE[i.name]).min, 0);
+  const totalMaxCost = result?.items.reduce((s, i) => s + i.qty * (liveLookup[i.name] || PRICE_RANGE[i.name]).max, 0);
+  const hasLiveRates = result?.items.some(i => liveLookup[i.name]);
 
   return (
     <CustomerLayout>
@@ -261,7 +288,14 @@ export default function CustomerEstimator() {
 
             {/* Total cost */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-sm font-medium text-indigo-700">Total Estimated Material Cost</p>
+              <div>
+                <p className="text-sm font-medium text-indigo-700">Total Estimated Material Cost</p>
+                {hasLiveRates && (
+                  <p className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
+                    <Zap className="w-3 h-3" /> Live market rates use ho rahe hain
+                  </p>
+                )}
+              </div>
               <p className="font-black text-indigo-800">
                 ₹{Math.round(totalMinCost).toLocaleString('en-IN')} – ₹{Math.round(totalMaxCost).toLocaleString('en-IN')}
               </p>
@@ -278,6 +312,7 @@ export default function CustomerEstimator() {
                   name={item.name}
                   qty={item.qty}
                   priceRange={PRICE_RANGE[item.name]}
+                  liveRange={liveLookup[item.name] || null}
                   onRequest={handleRequest}
                 />
               ))}

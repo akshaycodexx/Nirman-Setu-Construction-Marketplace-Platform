@@ -53,6 +53,7 @@ import CustomerProjectDetail from './pages/customer/CustomerProjectDetail';
 import AdminQuotes from './pages/admin/AdminQuotes';
 import AdminLabour from './pages/admin/AdminLabour';
 import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminRates from './pages/admin/AdminRates';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -131,6 +132,7 @@ export default function App() {
             <Route path="/admin/quotes" element={<AdminGuard><AdminQuotes /></AdminGuard>} />
             <Route path="/admin/labour" element={<AdminGuard><AdminLabour /></AdminGuard>} />
             <Route path="/admin/notifications" element={<AdminGuard><AdminNotifications /></AdminGuard>} />
+            <Route path="/admin/rates" element={<AdminGuard><AdminRates /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 

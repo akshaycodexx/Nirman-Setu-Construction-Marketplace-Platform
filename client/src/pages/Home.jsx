@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import WhatsAppButton from '../components/WhatsAppButton';
@@ -6,7 +8,7 @@ import { useCustomer } from '../context/CustomerContext';
 import {
   Package, Truck, Settings, Shield, Clock, Star,
   ArrowRight, CheckCircle, Phone, ChevronRight, User, ClipboardList,
-  MessageSquare, Hammer, Calculator, FolderOpen
+  MessageSquare, Hammer, Calculator, FolderOpen, TrendingUp, Zap
 } from 'lucide-react';
 
 const categories = [
@@ -50,8 +52,25 @@ const stats = [
   { value: '4.8★', label: 'Customer Rating' },
 ];
 
+const CAT_LABELS = {
+  cement: 'Cement', sand: 'Sand', aggregate: 'Aggregate / Gitti',
+  steel: 'Steel / TMT', brick: 'Brick', equipment: 'Equipment', labour: 'Labour', other: 'Other',
+};
+
+const CAT_EMOJI = {
+  cement: '🧱', sand: '🪨', aggregate: '⬛', steel: '🔩',
+  brick: '🏗️', equipment: '🚜', labour: '👷', other: '📦',
+};
+
 export default function Home() {
   const { customer } = useCustomer();
+  const [rates, setRates] = useState([]);
+  const [ratesLoading, setRatesLoading] = useState(true);
+  const [showAllRates, setShowAllRates] = useState(false);
+
+  useEffect(() => {
+    axios.get('/api/rates').then(r => setRates(r.data.rates || [])).catch(() => {}).finally(() => setRatesLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -266,6 +285,64 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Aaj ke Material Rates */}
+      {(ratesLoading || rates.length > 0) && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full mb-2">
+                <Zap className="w-3 h-3" /> Live Rates
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                Aaj ke Material Rates
+              </h2>
+              <p className="text-gray-500 mt-1">Jharkhand market ke current prices — order karne se pehle check karo</p>
+            </div>
+            <TrendingUp className="w-10 h-10 text-green-400 hidden md:block" />
+          </div>
+
+          {ratesLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {(showAllRates ? rates : rates.slice(0, 8)).map(rate => (
+                  <div key={rate.rateId}
+                    className="bg-white border border-gray-100 hover:border-green-200 hover:shadow-md transition-all rounded-2xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-2xl">{CAT_EMOJI[rate.category] || '📦'}</span>
+                      <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full capitalize">{rate.city}</span>
+                    </div>
+                    <p className="font-bold text-gray-900 text-sm leading-tight">{rate.material}</p>
+                    {rate.grade && <p className="text-xs text-gray-400 mt-0.5">{rate.grade}</p>}
+                    <p className="text-green-600 font-black text-base mt-1.5">
+                      ₹{rate.minRate.toLocaleString('en-IN')} – ₹{rate.maxRate.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-xs text-gray-400">per {rate.unit}</p>
+                  </div>
+                ))}
+              </div>
+              {rates.length > 8 && (
+                <div className="text-center mt-6">
+                  <button onClick={() => setShowAllRates(s => !s)}
+                    className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-sm">
+                    {showAllRates ? 'Kam dikhao' : `Aur ${rates.length - 8} rates dekho`}
+                    <ArrowRight className={`w-4 h-4 transition-transform ${showAllRates ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+              )}
+              <p className="text-xs text-gray-400 text-center mt-4">
+                * Ye rates indicative hain. Actual price quote confirm karne ke baad milega.
+              </p>
+            </>
+          )}
+        </section>
+      )}
 
       {/* Customer Portal CTA */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
