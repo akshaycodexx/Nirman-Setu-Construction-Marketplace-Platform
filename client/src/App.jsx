@@ -35,6 +35,7 @@ import SupplierOrderDetail from './pages/supplier/SupplierOrderDetail';
 import SupplierProfile from './pages/supplier/SupplierProfile';
 import SupplierEarnings from './pages/supplier/SupplierEarnings';
 import SupplierQuoteRequests from './pages/supplier/SupplierQuoteRequests';
+import SupplierLabourRequests from './pages/supplier/SupplierLabourRequests';
 
 // Customer pages
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -46,7 +47,9 @@ import CustomerProfile from './pages/customer/CustomerProfile';
 import CustomerNotifications from './pages/customer/CustomerNotifications';
 import CustomerQuotes from './pages/customer/CustomerQuotes';
 import CustomerEstimator from './pages/customer/CustomerEstimator';
+import CustomerLabour from './pages/customer/CustomerLabour';
 import AdminQuotes from './pages/admin/AdminQuotes';
+import AdminLabour from './pages/admin/AdminLabour';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -123,6 +126,7 @@ export default function App() {
             <Route path="/admin/customers" element={<AdminGuard><AdminCustomers /></AdminGuard>} />
             <Route path="/admin/fees" element={<AdminGuard><AdminFees /></AdminGuard>} />
             <Route path="/admin/quotes" element={<AdminGuard><AdminQuotes /></AdminGuard>} />
+            <Route path="/admin/labour" element={<AdminGuard><AdminLabour /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
@@ -135,6 +139,7 @@ export default function App() {
             <Route path="/supplier/profile" element={<SupplierGuard><SupplierProfile /></SupplierGuard>} />
             <Route path="/supplier/earnings" element={<SupplierGuard><SupplierEarnings /></SupplierGuard>} />
             <Route path="/supplier/quotes" element={<SupplierGuard><SupplierQuoteRequests /></SupplierGuard>} />
+            <Route path="/supplier/labour" element={<SupplierGuard><SupplierLabourRequests /></SupplierGuard>} />
             <Route path="/supplier" element={<Navigate to="/supplier/dashboard" replace />} />
 
             {/* Customer */}
@@ -146,6 +151,7 @@ export default function App() {
             <Route path="/customer/notifications" element={<CustomerGuard><CustomerNotifications /></CustomerGuard>} />
             <Route path="/customer/profile" element={<CustomerGuard><CustomerProfile /></CustomerGuard>} />
             <Route path="/customer/quotes" element={<CustomerGuard><CustomerQuotes /></CustomerGuard>} />
+            <Route path="/customer/labour" element={<CustomerGuard><CustomerLabour /></CustomerGuard>} />
             <Route path="/customer/estimator" element={<CustomerGuard><CustomerEstimator /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
 
