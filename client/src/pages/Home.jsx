@@ -460,25 +460,23 @@ export default function Home() {
       )}
 
       {/* ─── FINAL CTA ─── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
-        <div className="relative bg-gradient-to-r from-orange-500 to-orange-600 rounded-3xl p-10 md:p-14 text-white overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle at 90% 10%, #fff 0%, transparent 40%)' }} />
-          <div className="relative text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-3">Abhi Start Karo — Bilkul Free</h2>
-            <p className="text-orange-100 text-lg mb-8 max-w-xl mx-auto">
-              2 ghante me best quote milega. Zero commitment. Just connect karo.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/request"
-                className="inline-flex items-center justify-center gap-2 bg-white text-orange-600 font-extrabold px-8 py-3.5 rounded-xl hover:bg-orange-50 transition-colors shadow-lg text-sm">
-                Free Quote Lo <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/supplier/register"
-                className="inline-flex items-center justify-center gap-2 bg-orange-700/40 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-orange-700/60 transition-colors text-sm">
-                <Package className="w-4 h-4" /> Supplier Bano
-              </Link>
-            </div>
+      <section className="relative bg-orange-500 py-16 md:py-20 text-white overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle at 10% 90%, rgba(0,0,0,0.12) 0%, transparent 50%), radial-gradient(circle at 90% 10%, rgba(255,255,255,0.08) 0%, transparent 40%)' }} />
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-3">Abhi Start Karo — Bilkul Free</h2>
+          <p className="text-orange-100 text-lg mb-8 max-w-xl mx-auto">
+            2 ghante me best quote milega. Zero commitment. Just connect karo.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/request"
+              className="inline-flex items-center justify-center gap-2 bg-white text-orange-600 font-extrabold px-8 py-3.5 rounded-xl hover:bg-orange-50 transition-colors shadow-lg text-sm">
+              Free Quote Lo <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link to="/supplier/register"
+              className="inline-flex items-center justify-center gap-2 bg-white/15 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/25 transition-colors text-sm">
+              <Package className="w-4 h-4" /> Supplier Bano
+            </Link>
           </div>
         </div>
       </section>
