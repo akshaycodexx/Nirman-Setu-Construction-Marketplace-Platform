@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCustomer } from '../context/CustomerContext';
-import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings, Bell, CheckCircle, IndianRupee, Package, AlertCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings, Bell, CheckCircle, IndianRupee, Package, AlertCircle, MessageSquare, Calculator } from 'lucide-react';
 
 const navLinks = [
   { to: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/customer/orders', icon: ClipboardList, label: 'My Orders' },
   { to: '/customer/quotes', icon: MessageSquare, label: 'Quote Requests' },
+  { to: '/customer/estimator', icon: Calculator, label: 'Material Estimator' },
   { to: '/customer/notifications', icon: Bell, label: 'Notifications' },
   { to: '/customer/profile', icon: Settings, label: 'Profile' },
 ];

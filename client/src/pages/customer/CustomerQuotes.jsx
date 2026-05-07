@@ -7,7 +7,7 @@ import {
   Plus, X, ChevronDown, ChevronUp, CheckCircle, Clock, Ban,
   MessageSquare, IndianRupee, Package, Loader2, ArrowRight,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const UNITS = ['ton', 'bag', 'piece', 'truck', 'cubic_meter', 'kg', 'litre', 'sqft'];
 const UNIT_LABEL = { ton: 'Ton', bag: 'Bag', piece: 'Piece', truck: 'Truck', cubic_meter: 'Cubic Meter', kg: 'KG', litre: 'Litre', sqft: 'Sq.Ft' };
@@ -27,11 +27,13 @@ const QUOTE_STATUS_STYLE = {
   withdrawn: 'bg-gray-100 text-gray-500',
 };
 
-function RequestForm({ onCreated, onClose }) {
+function RequestForm({ onCreated, onClose, prefill }) {
   const { authHeader } = useCustomer();
   const [form, setForm] = useState({
-    material: '', quantity: '', unit: 'ton', description: '',
-    city: '', pincode: '', address: '', requiredBy: '', budget: '',
+    material: prefill?.material || '',
+    quantity: prefill?.quantity || '',
+    unit: prefill?.unit || 'ton',
+    description: '', city: '', pincode: '', address: '', requiredBy: '', budget: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -214,7 +216,14 @@ function QuoteCard({ quote, request, onRefresh }) {
       <div className={`rounded-xl border p-4 space-y-3 ${quote.status === 'accepted' ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-white'}`}>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-semibold text-gray-900 text-sm">{quote.supplierName}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-gray-900 text-sm">{quote.supplierName}</p>
+              {quote.verifiedBadge && (
+                <span className="inline-flex items-center gap-0.5 bg-blue-100 text-blue-700 text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                  <CheckCircle className="w-3 h-3" /> Verified
+                </span>
+              )}
+            </div>
             <p className="text-xs text-gray-500 mt-0.5">{quote.deliveryDays} din mein delivery</p>
           </div>
           <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${QUOTE_STATUS_STYLE[quote.status] || 'bg-gray-100 text-gray-500'}`}>
@@ -356,9 +365,11 @@ function RequestCard({ request, onRefresh }) {
 
 export default function CustomerQuotes() {
   const { authHeader } = useCustomer();
+  const location = useLocation();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(!!location.state?.prefill);
+  const prefill = location.state?.prefill || null;
 
   const load = () => {
     setLoading(true);
@@ -379,7 +390,7 @@ export default function CustomerQuotes() {
 
   return (
     <CustomerLayout>
-      {formOpen && <RequestForm onCreated={handleCreated} onClose={() => setFormOpen(false)} />}
+      {formOpen && <RequestForm prefill={prefill} onCreated={handleCreated} onClose={() => setFormOpen(false)} />}
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Header */}

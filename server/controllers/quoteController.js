@@ -36,7 +36,8 @@ exports.getMyRequests = async (req, res) => {
     const requests = await QuoteRequest.find({ customerId: req.customer._id })
       .populate({
         path: 'quotes',
-        select: 'quoteId supplierName pricePerUnit totalPrice deliveryDays notes status currentPrice negotiation createdAt',
+        select: 'quoteId supplierName pricePerUnit totalPrice deliveryDays notes status currentPrice negotiation supplierId createdAt',
+        populate: { path: 'supplierId', select: 'verifiedBadge' },
       })
       .sort({ createdAt: -1 });
 
@@ -49,7 +50,18 @@ exports.getMyRequests = async (req, res) => {
       }
     }
 
-    res.json({ success: true, requests });
+    // Flatten verifiedBadge onto quote object
+    const result = requests.map(req => {
+      const obj = req.toObject();
+      obj.quotes = obj.quotes.map(q => ({
+        ...q,
+        verifiedBadge: q.supplierId?.verifiedBadge || false,
+        supplierId: q.supplierId?._id || q.supplierId,
+      }));
+      return obj;
+    });
+
+    res.json({ success: true, requests: result });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -45,6 +45,8 @@ import CustomerOrderDetail from './pages/customer/CustomerOrderDetail';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import CustomerNotifications from './pages/customer/CustomerNotifications';
 import CustomerQuotes from './pages/customer/CustomerQuotes';
+import CustomerEstimator from './pages/customer/CustomerEstimator';
+import AdminQuotes from './pages/admin/AdminQuotes';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -120,6 +122,7 @@ export default function App() {
             <Route path="/admin/complaints" element={<AdminGuard><AdminComplaints /></AdminGuard>} />
             <Route path="/admin/customers" element={<AdminGuard><AdminCustomers /></AdminGuard>} />
             <Route path="/admin/fees" element={<AdminGuard><AdminFees /></AdminGuard>} />
+            <Route path="/admin/quotes" element={<AdminGuard><AdminQuotes /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
@@ -143,6 +146,7 @@ export default function App() {
             <Route path="/customer/notifications" element={<CustomerGuard><CustomerNotifications /></CustomerGuard>} />
             <Route path="/customer/profile" element={<CustomerGuard><CustomerProfile /></CustomerGuard>} />
             <Route path="/customer/quotes" element={<CustomerGuard><CustomerQuotes /></CustomerGuard>} />
+            <Route path="/customer/estimator" element={<CustomerGuard><CustomerEstimator /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
 
             {/* 404 */}
