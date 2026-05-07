@@ -48,6 +48,8 @@ import CustomerNotifications from './pages/customer/CustomerNotifications';
 import CustomerQuotes from './pages/customer/CustomerQuotes';
 import CustomerEstimator from './pages/customer/CustomerEstimator';
 import CustomerLabour from './pages/customer/CustomerLabour';
+import CustomerProjects from './pages/customer/CustomerProjects';
+import CustomerProjectDetail from './pages/customer/CustomerProjectDetail';
 import AdminQuotes from './pages/admin/AdminQuotes';
 import AdminLabour from './pages/admin/AdminLabour';
 import AdminNotifications from './pages/admin/AdminNotifications';
@@ -155,6 +157,8 @@ export default function App() {
             <Route path="/customer/quotes" element={<CustomerGuard><CustomerQuotes /></CustomerGuard>} />
             <Route path="/customer/labour" element={<CustomerGuard><CustomerLabour /></CustomerGuard>} />
             <Route path="/customer/estimator" element={<CustomerGuard><CustomerEstimator /></CustomerGuard>} />
+            <Route path="/customer/projects" element={<CustomerGuard><CustomerProjects /></CustomerGuard>} />
+            <Route path="/customer/projects/:projectId" element={<CustomerGuard><CustomerProjectDetail /></CustomerGuard>} />
             <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
 
             {/* 404 */}

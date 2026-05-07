@@ -13,6 +13,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const feeRoutes = require('./routes/feeRoutes');
 const quoteRoutes = require('./routes/quoteRoutes');
 const labourRoutes = require('./routes/labourRoutes');
+const projectRoutes = require('./routes/projectRoutes');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -72,6 +73,7 @@ app.use('/api/customer', customerRoutes);
 app.use('/api/admin/fees', feeRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/labour', labourRoutes);
+app.use('/api/projects', projectRoutes);
 app.use('/uploads', require('express').static(require('path').join(__dirname, 'uploads')));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

@@ -5,7 +5,8 @@ import WhatsAppButton from '../components/WhatsAppButton';
 import { useCustomer } from '../context/CustomerContext';
 import {
   Package, Truck, Settings, Shield, Clock, Star,
-  ArrowRight, CheckCircle, Phone, ChevronRight, User, ClipboardList
+  ArrowRight, CheckCircle, Phone, ChevronRight, User, ClipboardList,
+  MessageSquare, Hammer, Calculator, FolderOpen
 } from 'lucide-react';
 
 const categories = [
@@ -194,6 +195,75 @@ export default function Home() {
               <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* New Services */}
+      <section className="bg-gray-50 py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
+              ✨ Naye Features
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Sirf Material Nahi — Poora Construction Manage Karo
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              Quote compare karo, karigar book karo, budget track karo — sab kuch ek jagah
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                icon: MessageSquare,
+                color: 'bg-blue-500',
+                bg: 'from-blue-50 to-white border-blue-100',
+                title: 'Quote Compare',
+                desc: 'Multiple suppliers ko ek sath RFQ bhejo — best price compare karo aur accept karo.',
+                to: '/customer/quotes',
+                cta: 'Quote Request Karo',
+              },
+              {
+                icon: Hammer,
+                color: 'bg-amber-500',
+                bg: 'from-amber-50 to-white border-amber-100',
+                title: 'Karigar Booking',
+                desc: 'Mason, plumber, electrician — verified karigars site pe book karo, seedha app se.',
+                to: '/customer/labour',
+                cta: 'Karigar Dhundo',
+              },
+              {
+                icon: Calculator,
+                color: 'bg-green-500',
+                bg: 'from-green-50 to-white border-green-100',
+                title: 'Material Estimator',
+                desc: 'Construction area batao — cement, balu, gitti, sariya ka estimate instantly milega.',
+                to: '/customer/estimator',
+                cta: 'Estimate Nikalo',
+              },
+              {
+                icon: FolderOpen,
+                color: 'bg-indigo-500',
+                bg: 'from-indigo-50 to-white border-indigo-100',
+                title: 'Project Tracker',
+                desc: 'Ghar, dukan, factory — sab ke orders aur karigars ek project mein track karo.',
+                to: '/customer/projects',
+                cta: 'Project Banao',
+              },
+            ].map(s => (
+              <Link key={s.title} to={customer ? s.to : '/customer/register'}
+                className={`group bg-linear-to-b ${s.bg} border rounded-2xl p-6 flex flex-col hover:shadow-md transition-all`}>
+                <div className={`w-11 h-11 ${s.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <s.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{s.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed flex-1">{s.desc}</p>
+                <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors">
+                  {s.cta} <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
