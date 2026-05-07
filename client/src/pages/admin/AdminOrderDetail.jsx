@@ -7,7 +7,7 @@ import ChatPanel from '../../components/ChatPanel';
 import {
   ArrowLeft, Package, User, MapPin,
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
-  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap, BadgeIndianRupee, X
+  Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap, BadgeIndianRupee, X, Boxes
 } from 'lucide-react';
 
 const adminAuthHeader = () => {
@@ -48,6 +48,11 @@ export default function AdminOrderDetail() {
   const [assigning, setAssigning] = useState(false);
   const [feeWarning, setFeeWarning] = useState(null); // { pendingCount, pendingTotal, fees }
 
+  // Stock check
+  const [stockResults, setStockResults] = useState([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockChecked, setStockChecked] = useState(false);
+
   // Platform fee state
   const [platformFee, setPlatformFee] = useState(null);
   const [feePaidBy, setFeePaidBy] = useState('supplier');
@@ -85,6 +90,26 @@ export default function AdminOrderDetail() {
   };
 
   const handleAssignSupplier = () => { if (!selectedSupplier) return; doAssign(false); };
+
+  const checkStock = async () => {
+    if (!order) return;
+    setStockLoading(true);
+    setStockChecked(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('city', order.delivery?.city || '');
+      // Use first item name as keyword, category as hint
+      const keyword = order.items?.[0]?.name || '';
+      if (keyword) params.set('material', keyword);
+      params.set('category', order.category === 'basic_materials' ? 'cement' : order.category);
+      const { data } = await axios.get(`/api/stock/admin/search?${params}`, { headers: adminAuthHeader() });
+      setStockResults(data.results || []);
+    } catch {
+      toast.error('Stock check failed');
+    } finally {
+      setStockLoading(false);
+    }
+  };
 
   const handleCreateFee = async () => {
     if (!feeAmount) { toast.error('Amount daalo'); return; }
@@ -424,6 +449,44 @@ export default function AdminOrderDetail() {
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Stock check */}
+                <div>
+                  <button onClick={checkStock} disabled={stockLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-semibold py-2 rounded-xl text-sm transition-colors">
+                    {stockLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Boxes className="w-4 h-4" />}
+                    Kiske paas available hai?
+                  </button>
+                  {stockChecked && !stockLoading && (
+                    <div className="mt-2 space-y-1.5">
+                      {stockResults.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-2 bg-gray-50 rounded-xl">Kisi supplier ne yeh material list nahi kiya</p>
+                      ) : (
+                        stockResults.map(r => (
+                          <button key={r.supplier._id} onClick={() => setSelectedSupplier(r.supplier._id)}
+                            className={`w-full flex items-start justify-between px-3 py-2 rounded-xl border text-sm transition-colors text-left ${
+                              selectedSupplier === r.supplier._id
+                                ? 'border-teal-400 bg-teal-50'
+                                : 'border-teal-100 bg-teal-50/40 hover:bg-teal-50'
+                            }`}>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-gray-900">{r.supplier.name}</p>
+                                {r.supplier.verifiedBadge && <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" />}
+                              </div>
+                              {r.items.map(i => (
+                                <p key={i.stockId} className="text-xs text-teal-700 mt-0.5">
+                                  {i.material} — {i.quantity} {i.unit} @ ₹{i.pricePerUnit}/{i.unit}
+                                </p>
+                              ))}
+                            </div>
+                            <span className="shrink-0 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium ml-2 mt-0.5">In Stock</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Nearby suppliers quick-select */}
                 {nearbySuppliers.length > 0 && (
                   <div>

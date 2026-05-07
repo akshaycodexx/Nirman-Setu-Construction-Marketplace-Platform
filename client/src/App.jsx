@@ -36,6 +36,7 @@ import SupplierProfile from './pages/supplier/SupplierProfile';
 import SupplierEarnings from './pages/supplier/SupplierEarnings';
 import SupplierQuoteRequests from './pages/supplier/SupplierQuoteRequests';
 import SupplierLabourRequests from './pages/supplier/SupplierLabourRequests';
+import SupplierStock from './pages/supplier/SupplierStock';
 
 // Customer pages
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -54,6 +55,7 @@ import AdminQuotes from './pages/admin/AdminQuotes';
 import AdminLabour from './pages/admin/AdminLabour';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminRates from './pages/admin/AdminRates';
+import AdminStock from './pages/admin/AdminStock';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -133,6 +135,7 @@ export default function App() {
             <Route path="/admin/labour" element={<AdminGuard><AdminLabour /></AdminGuard>} />
             <Route path="/admin/notifications" element={<AdminGuard><AdminNotifications /></AdminGuard>} />
             <Route path="/admin/rates" element={<AdminGuard><AdminRates /></AdminGuard>} />
+            <Route path="/admin/stock" element={<AdminGuard><AdminStock /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
@@ -146,6 +149,7 @@ export default function App() {
             <Route path="/supplier/earnings" element={<SupplierGuard><SupplierEarnings /></SupplierGuard>} />
             <Route path="/supplier/quotes" element={<SupplierGuard><SupplierQuoteRequests /></SupplierGuard>} />
             <Route path="/supplier/labour" element={<SupplierGuard><SupplierLabourRequests /></SupplierGuard>} />
+            <Route path="/supplier/stock" element={<SupplierGuard><SupplierStock /></SupplierGuard>} />
             <Route path="/supplier" element={<Navigate to="/supplier/dashboard" replace />} />
 
             {/* Customer */}
