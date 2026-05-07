@@ -10,7 +10,7 @@ import {
   Package, Shield, Clock, Star, HardHat,
   ArrowRight, CheckCircle, ChevronRight,
   MessageSquare, Hammer, Calculator, FolderOpen,
-  TrendingUp, Zap, IndianRupee, BadgeCheck, MapPin, Users
+  TrendingUp, Zap, IndianRupee, BadgeCheck, Users
 } from 'lucide-react';
 
 const categories = [
@@ -107,46 +107,25 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right — visual mock */}
+            {/* Right — platform highlights */}
             <div className="hidden lg:block">
               <div className="relative w-80 ml-auto space-y-3">
                 <div className="absolute -inset-6 bg-orange-500/10 blur-3xl rounded-full" />
-                {/* Order card */}
-                <div className="relative bg-white/8 backdrop-blur-sm border border-white/12 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-white text-sm font-bold">Order NS-2847</span>
-                    <span className="bg-orange-500/25 text-orange-300 text-xs px-2.5 py-0.5 rounded-full font-semibold">Dispatched</span>
-                  </div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">🧱</span>
+                {[
+                  { emoji: '🧱', title: 'Material Quote', desc: 'Cement, balu, gitti, sariya — free quote lo', color: 'border-orange-500/20' },
+                  { emoji: '🚜', title: 'Equipment Hire', desc: 'JCB, truck, crane — daily/hourly booking', color: 'border-yellow-500/20' },
+                  { emoji: '👷', title: 'Karigar Booking', desc: 'Mason, plumber, electrician — on demand', color: 'border-blue-500/20' },
+                  { emoji: '📊', title: 'Project Tracker', desc: 'Sab orders ek jagah — status live', color: 'border-indigo-500/20' },
+                ].map(item => (
+                  <div key={item.title}
+                    className={`relative bg-white/5 backdrop-blur-sm border ${item.color} rounded-2xl px-5 py-4 flex items-center gap-4`}>
+                    <span className="text-3xl shrink-0">{item.emoji}</span>
                     <div>
-                      <p className="text-white text-sm font-semibold">Cement OPC × 100 bags</p>
-                      <p className="text-gray-400 text-xs flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> Ranchi — Lalpur</p>
+                      <p className="text-white text-sm font-semibold">{item.title}</p>
+                      <p className="text-gray-400 text-xs mt-0.5">{item.desc}</p>
                     </div>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                    <span className="text-gray-400 text-xs">Best Quote</span>
-                    <span className="text-green-400 font-black text-xl">₹36,000</span>
-                  </div>
-                </div>
-
-                {/* Quote notification */}
-                <div className="relative bg-green-500/15 backdrop-blur-sm border border-green-500/25 rounded-2xl p-3.5 flex items-center gap-3 ml-6">
-                  <div className="w-9 h-9 bg-green-500 rounded-xl flex items-center justify-center shrink-0">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-green-300 text-xs font-bold">3 Quotes Received!</p>
-                    <p className="text-white text-sm font-medium">Best: ₹360/bag — Saving ₹4,200</p>
-                  </div>
-                </div>
-
-                {/* Supplier earnings */}
-                <div className="relative bg-emerald-500/15 backdrop-blur-sm border border-emerald-500/25 rounded-2xl p-4">
-                  <p className="text-emerald-300 text-xs font-bold mb-1 flex items-center gap-1"><IndianRupee className="w-3 h-3" /> Supplier April Earnings</p>
-                  <p className="text-white text-3xl font-black">₹1,24,500</p>
-                  <p className="text-emerald-400 text-xs mt-0.5">↑ 23% from last month</p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
