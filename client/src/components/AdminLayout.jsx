@@ -18,6 +18,7 @@ const navLinks = [
   { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
   { to: '/admin/fees', icon: BadgeIndianRupee, label: 'Platform Fees' },
   { to: '/admin/complaints', icon: AlertTriangle, label: 'Complaints' },
+  { to: '/admin/notifications', icon: Bell, label: 'Notif Log' },
   { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 

@@ -95,6 +95,81 @@ const sendPaymentConfirmation = async (order) => {
   await send(order.customer.email, `💳 Payment Confirmed: ${order.orderId}`, html);
 };
 
+// ── Customer: RFQ bid received ────────────────────────────────────────────────
+const sendRfqBidEmail = async (customer, request, quote) => {
+  if (!customer.email) return;
+  const link = `${process.env.CLIENT_URL}/customer/quotes`;
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#f97316;">💬 Naya Quote Mila — Nirman Setu</h2>
+      <p>Namaste <strong>${customer.name}</strong>,</p>
+      <p>Aapke <strong>${request.material}</strong> request par <strong>${quote.supplierName}</strong> ne quote diya:</p>
+      <div style="background:#fff7ed;border-left:4px solid #f97316;padding:16px;margin:16px 0;border-radius:4px;">
+        <p style="margin:0;font-size:22px;font-weight:bold;color:#111;">₹${Number(quote.totalPrice).toLocaleString('en-IN')}</p>
+        <p style="margin:6px 0 0;color:#6b7280;font-size:14px;">₹${quote.pricePerUnit}/${request.unit} × ${request.quantity} ${request.unit} · Delivery: ${quote.deliveryDays} days</p>
+        ${quote.notes ? `<p style="margin:6px 0 0;font-size:13px;font-style:italic;color:#6b7280;">"${quote.notes}"</p>` : ''}
+      </div>
+      <a href="${link}" style="display:inline-block;background:#f97316;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Compare & Accept Quotes</a>
+    </div>`;
+  await send(customer.email, `💬 ${request.material} par quote mila — ₹${Number(quote.totalPrice).toLocaleString('en-IN')}`, html);
+};
+
+// ── Supplier: RFQ quote accepted ──────────────────────────────────────────────
+const sendRfqAcceptedEmail = async (supplier, request, quote) => {
+  if (!supplier.email) return;
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#16a34a;">🎉 Quote Accept Ho Gaya — Nirman Setu</h2>
+      <p>Namaste <strong>${supplier.name}</strong>,</p>
+      <p>Customer ne aapka <strong>${request.material}</strong> quote accept kar liya!</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:8px;margin:16px 0;">
+        <p style="margin:0;font-weight:bold;font-size:18px;">₹${Number(quote.currentPrice).toLocaleString('en-IN')}</p>
+        <p style="margin:6px 0 0;font-size:13px;color:#166534;">Customer: ${request.customerName} · City: ${request.city}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#166534;">Delivery by: ${new Date(request.requiredBy).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}</p>
+      </div>
+      <a href="${process.env.CLIENT_URL}/supplier/quotes" style="display:inline-block;background:#16a34a;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">Portal Kholein</a>
+    </div>`;
+  await send(supplier.email, `🎉 Quote accepted: ${request.material} — ₹${Number(quote.currentPrice).toLocaleString('en-IN')}`, html);
+};
+
+// ── Customer: Labour bid received ─────────────────────────────────────────────
+const sendLabourBidEmail = async (customer, request, bid) => {
+  if (!customer.email) return;
+  const link = `${process.env.CLIENT_URL}/customer/labour`;
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#f59e0b;">🔨 Karigar Bid Mili — Nirman Setu</h2>
+      <p>Namaste <strong>${customer.name}</strong>,</p>
+      <p>Aapke <strong>${request.jobTitle}</strong> ke liye <strong>${bid.supplierName}</strong> ne bid di:</p>
+      <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:16px;margin:16px 0;border-radius:4px;">
+        <p style="margin:0;font-size:22px;font-weight:bold;color:#111;">₹${Number(bid.totalAmount).toLocaleString('en-IN')}</p>
+        <p style="margin:6px 0 0;color:#6b7280;font-size:14px;">₹${bid.ratePerDay}/day × ${bid.totalWorkers} worker${bid.totalWorkers > 1 ? 's' : ''} × ${bid.totalDays || '?'} days</p>
+        ${bid.notes ? `<p style="margin:6px 0 0;font-size:13px;font-style:italic;color:#6b7280;">"${bid.notes}"</p>` : ''}
+      </div>
+      <a href="${link}" style="display:inline-block;background:#f59e0b;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Bids Compare Karein</a>
+    </div>`;
+  await send(customer.email, `🔨 Karigar bid mili: ${request.jobTitle} — ₹${Number(bid.totalAmount).toLocaleString('en-IN')}`, html);
+};
+
+// ── Supplier: Labour bid accepted ─────────────────────────────────────────────
+const sendLabourAcceptedEmail = async (supplier, request, bid) => {
+  if (!supplier.email) return;
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#16a34a;">🎉 Karigar Booking Confirm — Nirman Setu</h2>
+      <p>Namaste <strong>${supplier.name}</strong>,</p>
+      <p>Customer ne aapko <strong>${request.jobTitle}</strong> ke liye book kar liya!</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:8px;margin:16px 0;">
+        <p style="margin:0;font-weight:bold;font-size:18px;">₹${Number(bid.currentRate).toLocaleString('en-IN')}</p>
+        <p style="margin:6px 0 0;font-size:13px;color:#166534;">Customer: ${request.customerName} · City: ${request.city}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#166534;">Start: ${new Date(request.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#166534;">Address: ${request.address}</p>
+      </div>
+      <a href="${process.env.CLIENT_URL}/supplier/labour" style="display:inline-block;background:#16a34a;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">Portal Kholein</a>
+    </div>`;
+  await send(supplier.email, `🎉 Karigar booking: ${request.jobTitle} — ${request.city}`, html);
+};
+
 // ── Supplier: assigned to order ───────────────────────────────────────────────
 const sendSupplierAssignment = async (order, supplier) => {
   if (!supplier.email) return;
@@ -121,4 +196,8 @@ module.exports = {
   sendStatusNotification,
   sendPaymentConfirmation,
   sendSupplierAssignment,
+  sendRfqBidEmail,
+  sendRfqAcceptedEmail,
+  sendLabourBidEmail,
+  sendLabourAcceptedEmail,
 };

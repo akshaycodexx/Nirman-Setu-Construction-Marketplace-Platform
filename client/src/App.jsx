@@ -50,6 +50,7 @@ import CustomerEstimator from './pages/customer/CustomerEstimator';
 import CustomerLabour from './pages/customer/CustomerLabour';
 import AdminQuotes from './pages/admin/AdminQuotes';
 import AdminLabour from './pages/admin/AdminLabour';
+import AdminNotifications from './pages/admin/AdminNotifications';
 import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="/admin/fees" element={<AdminGuard><AdminFees /></AdminGuard>} />
             <Route path="/admin/quotes" element={<AdminGuard><AdminQuotes /></AdminGuard>} />
             <Route path="/admin/labour" element={<AdminGuard><AdminLabour /></AdminGuard>} />
+            <Route path="/admin/notifications" element={<AdminGuard><AdminNotifications /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 

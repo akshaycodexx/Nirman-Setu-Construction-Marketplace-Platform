@@ -153,4 +153,79 @@ function notifyStatusUpdate(order) {
   }
 }
 
-module.exports = { notifyNewOrder, notifyStatusUpdate, notifySupplierAssigned };
+// ─── Free-form text message (works in 24h customer-service window / dev) ──────
+async function sendText(phone, message) {
+  const token = process.env.WHATSAPP_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (
+    !token || !phoneNumberId ||
+    token === 'your_permanent_access_token_here' ||
+    phoneNumberId === 'your_phone_number_id_here'
+  ) {
+    console.log(`[WhatsApp] Credentials not set — skipping text to ${phone}`);
+    return;
+  }
+
+  const to = formatPhone(phone);
+  const { data } = await axios.post(
+    `${API_URL}/${phoneNumberId}/messages`,
+    {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body: message },
+    },
+    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+  );
+  return data;
+}
+
+// ─── RFQ / Material Quote events ──────────────────────────────────────────────
+
+function notifyRfqBidReceived({ customerPhone, customerName, supplierName, material, amount }) {
+  const msg = `Namaste ${customerName}! ${supplierName} ne aapke *${material}* request par *₹${Number(amount).toLocaleString('en-IN')}* ka quote diya. Dekhein aur compare karein: nirman-setu app.`;
+  sendText(customerPhone, msg).catch(e => console.error('[WhatsApp] rfq_bid failed:', e.message));
+}
+
+function notifyRfqAccepted({ supplierPhone, supplierName, material, amount }) {
+  const msg = `Badhai ho ${supplierName}! Customer ne aapka *${material}* quote *₹${Number(amount).toLocaleString('en-IN')}* accept kar liya. App kholein deal confirm karne ke liye.`;
+  sendText(supplierPhone, msg).catch(e => console.error('[WhatsApp] rfq_accepted failed:', e.message));
+}
+
+function notifyRfqCounter({ recipientPhone, recipientName, counterBy, material, newPrice }) {
+  const msg = `${recipientName}, *${material}* quote par counter offer aaya — naya price: *₹${Number(newPrice).toLocaleString('en-IN')}* (by ${counterBy}). App mein jawab dein.`;
+  sendText(recipientPhone, msg).catch(e => console.error('[WhatsApp] rfq_counter failed:', e.message));
+}
+
+// ─── Labour / Karigar events ───────────────────────────────────────────────────
+
+function notifyLabourBidReceived({ customerPhone, customerName, supplierName, jobTitle, amount }) {
+  const msg = `Namaste ${customerName}! *${supplierName}* ne aapke "${jobTitle}" job par *₹${Number(amount).toLocaleString('en-IN')}* ki bid di. App mein dekhein aur accept karein.`;
+  sendText(customerPhone, msg).catch(e => console.error('[WhatsApp] labour_bid failed:', e.message));
+}
+
+function notifyLabourAccepted({ supplierPhone, supplierName, jobTitle, customerName }) {
+  const msg = `Badhai ho ${supplierName}! *${customerName}* ne aapki "${jobTitle}" bid accept kar li. Seedha contact hoga — taiyaar rahein!`;
+  sendText(supplierPhone, msg).catch(e => console.error('[WhatsApp] labour_accepted failed:', e.message));
+}
+
+// ─── Payment event ─────────────────────────────────────────────────────────────
+
+function notifyPaymentReceived({ customerPhone, customerName, orderId, amount }) {
+  const msg = `Payment confirm! Namaste ${customerName}, aapka *₹${Number(amount).toLocaleString('en-IN')}* advance payment receive hua. Order ID: *${orderId}*. Delivery jaldi hogi.`;
+  sendText(customerPhone, msg).catch(e => console.error('[WhatsApp] payment failed:', e.message));
+}
+
+module.exports = {
+  notifyNewOrder,
+  notifyStatusUpdate,
+  notifySupplierAssigned,
+  sendText,
+  notifyRfqBidReceived,
+  notifyRfqAccepted,
+  notifyRfqCounter,
+  notifyLabourBidReceived,
+  notifyLabourAccepted,
+  notifyPaymentReceived,
+};

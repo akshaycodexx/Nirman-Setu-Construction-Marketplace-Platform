@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const PlatformFee = require('../models/PlatformFee');
 const { createRazorpayOrder, verifySignature } = require('../utils/razorpay');
 const { sendPaymentConfirmation } = require('../utils/mailer');
+const notify = require('../utils/notify');
 
 function signToken(id) {
   return jwt.sign({ id, role: 'customer' }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -284,6 +285,7 @@ exports.verifyPayment = async (req, res) => {
     );
 
     sendPaymentConfirmation(order).catch(e => console.error('Payment email failed:', e.message));
+    notify.onPaymentReceived(order);
 
     res.json({ message: 'Payment verified', order });
   } catch (err) {

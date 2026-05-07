@@ -1,6 +1,8 @@
 const QuoteRequest = require('../models/QuoteRequest');
 const Quote = require('../models/Quote');
 const Order = require('../models/Order');
+const Supplier = require('../models/Supplier');
+const notify = require('../utils/notify');
 
 // ─── CUSTOMER ────────────────────────────────────────────────────────────────
 
@@ -102,6 +104,18 @@ exports.counterOffer = async (req, res) => {
       note,
     });
 
+    // Notify supplier
+    const supplier = await Supplier.findById(quote.supplierId).select('phone email name').lean();
+    if (supplier) {
+      notify.onRfqCounter({
+        recipientPhone: supplier.phone,
+        recipientName: supplier.name,
+        counterBy: req.customer.name,
+        material: request.material,
+        newPrice: price,
+      });
+    }
+
     res.json({ success: true, quote });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -173,6 +187,21 @@ exports.acceptQuote = async (req, res) => {
         material: request.material,
       });
       io.to('admin').emit('order:new', { orderId, category: request.material, status: 'confirmed' });
+    }
+
+    // Notify supplier: their quote was accepted
+    const supplier = await Supplier.findById(quote.supplierId).select('phone email name').lean();
+    if (supplier) {
+      notify.onRfqAccepted({
+        supplierPhone: supplier.phone,
+        supplierEmail: supplier.email,
+        supplierName: supplier.name,
+        customerName: req.customer.name,
+        material: request.material,
+        amount: quote.currentPrice,
+        requestObj: request,
+        quoteObj: quote,
+      });
     }
 
     res.json({ success: true, orderId, order });
@@ -273,6 +302,21 @@ exports.submitQuote = async (req, res) => {
       totalPrice,
     });
 
+    // Notify customer: new bid arrived
+    const Customer = require('../models/Customer');
+    const customer = await Customer.findById(request.customerId).select('phone email name').lean();
+    if (customer) {
+      notify.onRfqBidReceived({
+        customerPhone: customer.phone,
+        customerEmail: customer.email,
+        customerName: customer.name,
+        supplierName: req.supplier.name,
+        material: request.material,
+        amount: totalPrice,
+        requestId: request.requestId,
+      });
+    }
+
     res.status(201).json({ success: true, quote });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -314,6 +358,21 @@ exports.respondToCounter = async (req, res) => {
       price: quote.currentPrice,
       supplierName: req.supplier.name,
     });
+
+    // Notify customer of supplier's response
+    if (action !== 'reject') {
+      const Customer = require('../models/Customer');
+      const customer = await Customer.findById(request.customerId).select('phone email name').lean();
+      if (customer) {
+        notify.onRfqCounter({
+          recipientPhone: customer.phone,
+          recipientName: customer.name,
+          counterBy: req.supplier.name,
+          material: request.material,
+          newPrice: quote.currentPrice,
+        });
+      }
+    }
 
     res.json({ success: true, quote });
   } catch (err) {

@@ -1,5 +1,7 @@
 const LabourRequest = require('../models/LabourRequest');
 const LabourQuote = require('../models/LabourQuote');
+const Supplier = require('../models/Supplier');
+const notify = require('../utils/notify');
 
 // ─── CUSTOMER ────────────────────────────────────────────────────────────────
 
@@ -99,6 +101,18 @@ exports.counterOffer = async (req, res) => {
       price, note,
     });
 
+    // Notify supplier of counter
+    const supplier = await Supplier.findById(quote.supplierId).select('phone name').lean();
+    if (supplier) {
+      notify.onLabourCounter({
+        recipientPhone: supplier.phone,
+        recipientName: supplier.name,
+        counterBy: req.customer.name,
+        jobTitle: request.jobTitle,
+        newPrice: price,
+      });
+    }
+
     res.json({ success: true, quote });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -140,6 +154,29 @@ exports.acceptQuote = async (req, res) => {
         city: request.city,
       });
     }
+
+    // Notify supplier: their bid was accepted
+    const supplier = await Supplier.findById(quote.supplierId).select('phone email name').lean();
+    if (supplier) {
+      notify.onLabourAccepted({
+        supplierPhone: supplier.phone,
+        supplierEmail: supplier.email,
+        supplierName: supplier.name,
+        customerName: req.customer.name,
+        jobTitle: request.jobTitle,
+        requestObj: request,
+        bidObj: quote,
+      });
+    }
+
+    // Notify customer with address/contact of supplier (counter-bypassing via platform)
+    notify.onLabourCounter({
+      recipientPhone: request.customerPhone,
+      recipientName: request.customerName,
+      counterBy: 'System',
+      jobTitle: request.jobTitle,
+      newPrice: quote.currentRate,
+    });
 
     res.json({ success: true, quote, request });
   } catch (err) {
@@ -241,6 +278,21 @@ exports.submitQuote = async (req, res) => {
       supplierName: req.supplier.name,
       totalAmount,
     });
+
+    // Notify customer: labour bid arrived
+    const Customer = require('../models/Customer');
+    const customer = await Customer.findById(request.customerId).select('phone email name').lean();
+    if (customer) {
+      notify.onLabourBidReceived({
+        customerPhone: customer.phone,
+        customerEmail: customer.email,
+        customerName: customer.name,
+        supplierName: req.supplier.name,
+        jobTitle: request.jobTitle,
+        amount: totalAmount,
+        requestId: request.requestId,
+      });
+    }
 
     res.status(201).json({ success: true, quote });
   } catch (err) {
