@@ -14,11 +14,11 @@ import {
 } from 'lucide-react';
 
 const categories = [
-  { icon: '🧱', name: 'Cement', desc: 'OPC, PPC — all grades', tag: 'material' },
-  { icon: '🪨', name: 'Balu / Sand', desc: 'River sand, M-sand', tag: 'material' },
-  { icon: '⬛', name: 'Gitti / Aggregate', desc: '10mm, 20mm, 40mm', tag: 'material' },
-  { icon: '🔩', name: 'Sariya / TMT', desc: 'Fe500, Fe550 grade steel', tag: 'material' },
-  { icon: '🚜', name: 'JCB / Excavator', desc: 'Hourly / daily hire', tag: 'equipment' },
+  { icon: '🧱', name: 'Cement', desc: 'OPC, PPC — all grades', tag: 'basic_materials' },
+  { icon: '🪨', name: 'Balu / Sand', desc: 'River sand, M-sand', tag: 'basic_materials' },
+  { icon: '⬛', name: 'Gitti / Aggregate', desc: '10mm, 20mm, 40mm', tag: 'basic_materials' },
+  { icon: '🔩', name: 'Sariya / TMT', desc: 'Fe500, Fe550 grade steel', tag: 'basic_materials' },
+  { icon: '🚜', name: 'JCB / Excavator', desc: 'Hourly / daily hire', tag: 'machinery' },
   { icon: '🚛', name: 'Truck / Dumper', desc: 'Material transport', tag: 'transport' },
 ];
 
