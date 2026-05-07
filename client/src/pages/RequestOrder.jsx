@@ -325,8 +325,11 @@ export default function RequestOrder() {
   const [submittedOrderId, setSubmittedOrderId] = useState(null);
   const [catSearch, setCatSearch] = useState('');
 
+  const urlCat = params.get('category');
+  const validUrlCat = urlCat && ITEMS_MAP[urlCat] ? urlCat : '';
+
   const [form, setForm] = useState({
-    category: params.get('category') || '',
+    category: validUrlCat,
     items: [emptyItem()],
     delivery: { address: '', city: '', pincode: '', date: '', slot: 'anytime' },
     customer: { name: '', phone: '', email: '' },
@@ -335,7 +338,7 @@ export default function RequestOrder() {
   });
 
   useEffect(() => {
-    if (params.get('category')) setStep(2);
+    if (validUrlCat) setStep(2);
   }, []);
 
   useEffect(() => {
