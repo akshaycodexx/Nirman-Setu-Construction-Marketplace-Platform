@@ -5,12 +5,13 @@ import toast from 'react-hot-toast';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
 import { useSocket } from '../../context/SocketContext';
-import { ArrowLeft, Package, MapPin, Calendar, Truck, CheckCircle, Loader2, AlertCircle, Camera, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Truck, CheckCircle, Loader2, AlertCircle, Camera, ThumbsUp, ThumbsDown } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const STATUS_STEPS = [
-  { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Tumhe assign kiya gaya hai' },
-  { key: 'dispatched', label: 'Dispatched', icon: Truck, desc: 'Material bhej diya' },
-  { key: 'delivered', label: 'Delivered', icon: CheckCircle, desc: 'Customer tak pahunch gaya' },
+const STATUS_STEP_KEYS = [
+  { key: 'confirmed',  labelKey: 'suppod.step.confirmed',  icon: CheckCircle, descKey: 'suppod.step.confirmedDesc' },
+  { key: 'dispatched', labelKey: 'suppod.step.dispatched', icon: Truck,        descKey: 'suppod.step.dispatchedDesc' },
+  { key: 'delivered',  labelKey: 'suppod.step.delivered',  icon: CheckCircle, descKey: 'suppod.step.deliveredDesc' },
 ];
 const FLOW = ['confirmed', 'dispatched', 'delivered'];
 
@@ -19,27 +20,28 @@ export default function SupplierOrderDetail() {
   const navigate = useNavigate();
   const { getAuthHeaders } = useSupplier();
   const socketRef = useSocket();
+  const t = useT();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [note, setNote] = useState('');
   const [proofNote, setProofNote] = useState('');
-  const [proofPhotoUrl, setProofPhotoUrl] = useState('');
   const [proofFile, setProofFile] = useState(null);
   const [submittingProof, setSubmittingProof] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [showDeclineForm, setShowDeclineForm] = useState(false);
   const [responding, setResponding] = useState(false);
 
+  const statusSteps = STATUS_STEP_KEYS.map(s => ({ ...s, label: t(s.labelKey), desc: t(s.descKey) }));
+
   const fetchOrder = () =>
     axios.get(`/api/supplier/orders/${orderId}`, { headers: getAuthHeaders() })
       .then(r => setOrder(r.data.order))
-      .catch(() => toast.error('Order nahi mila'))
+      .catch(() => toast.error(t('suppod.fetchFail')))
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchOrder(); }, [orderId]);
 
-  // Real-time: join order room, re-fetch on admin update
   useEffect(() => {
     const socket = socketRef?.current;
     if (!socket || !orderId) return;
@@ -59,9 +61,9 @@ export default function SupplierOrderDetail() {
     try {
       const { data } = await axios.put(`/api/supplier/orders/${orderId}/accept`, {}, { headers: getAuthHeaders() });
       setOrder(data.order);
-      toast.success('Order accept kar liya!');
+      toast.success(t('suppod.accepted'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Accept failed');
+      toast.error(err.response?.data?.message || t('suppod.acceptFail'));
     }
     setResponding(false);
   };
@@ -71,9 +73,9 @@ export default function SupplierOrderDetail() {
     try {
       const { data } = await axios.put(`/api/supplier/orders/${orderId}/decline`, { reason: declineReason }, { headers: getAuthHeaders() });
       setOrder(data.order);
-      toast.success('Order decline kar diya. Admin ko pata chal gaya.');
+      toast.success(t('suppod.declined'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Decline failed');
+      toast.error(err.response?.data?.message || t('suppod.declineFail'));
     }
     setResponding(false);
   };
@@ -89,9 +91,9 @@ export default function SupplierOrderDetail() {
       );
       setOrder(data.order);
       setNote('');
-      toast.success(`Status updated: ${nextStatus}`);
+      toast.success(t('suppod.statusUpdated', { status: nextStatus }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
+      toast.error(err.response?.data?.message || t('suppod.statusUpdateFail'));
     }
     setUpdating(false);
   };
@@ -100,7 +102,7 @@ export default function SupplierOrderDetail() {
     return (
       <SupplierLayout>
         <div className="flex items-center justify-center h-64 gap-3 text-gray-400">
-          <Loader2 className="w-5 h-5 animate-spin" /> Loading...
+          <Loader2 className="w-5 h-5 animate-spin" /> {t('suppod.loading')}
         </div>
       </SupplierLayout>
     );
@@ -111,7 +113,7 @@ export default function SupplierOrderDetail() {
       <SupplierLayout>
         <div className="text-center py-16 text-gray-400">
           <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p>Order nahi mila</p>
+          <p>{t('suppod.notFound')}</p>
         </div>
       </SupplierLayout>
     );
@@ -144,8 +146,8 @@ export default function SupplierOrderDetail() {
           <div className="flex items-start gap-3 mb-4">
             <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-amber-800">Admin ne tumhe assign kiya hai — accept ya decline karo</p>
-              <p className="text-amber-600 text-sm mt-0.5">Decline karne par admin ko doosra supplier dhundhna hoga.</p>
+              <p className="font-bold text-amber-800">{t('suppod.assignedMsg')}</p>
+              <p className="text-amber-600 text-sm mt-0.5">{t('suppod.declineNote')}</p>
             </div>
           </div>
           {!showDeclineForm ? (
@@ -153,11 +155,11 @@ export default function SupplierOrderDetail() {
               <button onClick={handleAccept} disabled={responding}
                 className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
                 {responding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
-                Accept Karo
+                {t('suppod.acceptKaro')}
               </button>
               <button onClick={() => setShowDeclineForm(true)} disabled={responding}
                 className="flex-1 flex items-center justify-center gap-2 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2.5 rounded-xl text-sm transition-colors">
-                <ThumbsDown className="w-4 h-4" /> Decline Karo
+                <ThumbsDown className="w-4 h-4" /> {t('suppod.declineKaro')}
               </button>
             </div>
           ) : (
@@ -166,18 +168,18 @@ export default function SupplierOrderDetail() {
                 type="text"
                 value={declineReason}
                 onChange={e => setDeclineReason(e.target.value)}
-                placeholder="Kyu decline kar rahe ho? (optional)"
+                placeholder={t('suppod.declinePlaceholder')}
                 className="w-full border border-amber-300 bg-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
               />
               <div className="flex gap-2">
                 <button onClick={() => setShowDeclineForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50">
-                  Wapas
+                  {t('suppod.wapas')}
                 </button>
                 <button onClick={handleDecline} disabled={responding}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
                   {responding ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Confirm Decline
+                  {t('suppod.confirmDecline')}
                 </button>
               </div>
             </div>
@@ -191,7 +193,7 @@ export default function SupplierOrderDetail() {
           {/* Items */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Package className="w-4 h-4 text-emerald-500" /> Order Items
+              <Package className="w-4 h-4 text-emerald-500" /> {t('suppod.orderItems')}
               <span className="ml-auto text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full capitalize">{order.category}</span>
             </h3>
             <div className="space-y-2">
@@ -204,7 +206,7 @@ export default function SupplierOrderDetail() {
             </div>
             {order.notes && (
               <div className="mt-3 bg-yellow-50 rounded-xl p-3 text-sm text-gray-600">
-                <span className="font-medium text-yellow-700">Note: </span>{order.notes}
+                <span className="font-medium text-yellow-700">{t('suppod.noteLabel')}</span>{order.notes}
               </div>
             )}
           </div>
@@ -212,28 +214,28 @@ export default function SupplierOrderDetail() {
           {/* Delivery */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-500" /> Delivery Info
+              <MapPin className="w-4 h-4 text-emerald-500" /> {t('suppod.deliveryInfo')}
             </h3>
             <div className="space-y-2 text-sm">
-              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Address</span><span className="text-gray-800 font-medium">{order.delivery?.address}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">City</span><span className="text-gray-800 font-medium">{order.delivery?.city} {order.delivery?.pincode && `— ${order.delivery.pincode}`}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Date</span><span className="text-gray-800 font-medium">{new Date(order.delivery?.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}</span></div>
-              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Slot</span><span className="text-gray-800 font-medium capitalize">{order.delivery?.slot}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">{t('suppod.addr')}</span><span className="text-gray-800 font-medium">{order.delivery?.address}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">{t('suppod.city')}</span><span className="text-gray-800 font-medium">{order.delivery?.city} {order.delivery?.pincode && `— ${order.delivery.pincode}`}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">{t('suppod.date')}</span><span className="text-gray-800 font-medium">{new Date(order.delivery?.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">{t('suppod.slot')}</span><span className="text-gray-800 font-medium capitalize">{order.delivery?.slot}</span></div>
             </div>
           </div>
 
           {/* Timeline */}
           {order.timeline?.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-semibold text-gray-800 mb-4">Activity</h3>
+              <h3 className="font-semibold text-gray-800 mb-4">{t('suppod.activity')}</h3>
               <div className="space-y-3">
-                {order.timeline.map((t, i) => (
+                {order.timeline.map((entry, i) => (
                   <div key={i} className="flex gap-3 text-sm">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full mt-1.5 shrink-0" />
                     <div>
-                      <span className="font-medium capitalize text-gray-800">{t.status}</span>
-                      {t.note && <span className="text-gray-500"> — {t.note}</span>}
-                      <p className="text-xs text-gray-400">{new Date(t.at).toLocaleString('en-IN')} by {t.by}</p>
+                      <span className="font-medium capitalize text-gray-800">{entry.status}</span>
+                      {entry.note && <span className="text-gray-500"> — {entry.note}</span>}
+                      <p className="text-xs text-gray-400">{new Date(entry.at).toLocaleString('en-IN')} by {entry.by}</p>
                     </div>
                   </div>
                 ))}
@@ -246,9 +248,9 @@ export default function SupplierOrderDetail() {
         <div className="space-y-4">
           {/* Progress */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-800 mb-4">Order Progress</h3>
+            <h3 className="font-semibold text-gray-800 mb-4">{t('suppod.progress')}</h3>
             <div className="space-y-0">
-              {STATUS_STEPS.map((s, i) => {
+              {statusSteps.map((s, i) => {
                 const isDone = i <= currentIdx;
                 const isCurrent = i === currentIdx;
                 return (
@@ -257,7 +259,7 @@ export default function SupplierOrderDetail() {
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-2 ${isDone ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-200'}`}>
                         <s.icon className={`w-3.5 h-3.5 ${isDone ? 'text-white' : 'text-gray-300'}`} />
                       </div>
-                      {i < STATUS_STEPS.length - 1 && (
+                      {i < statusSteps.length - 1 && (
                         <div className={`w-0.5 flex-1 my-1 ${isDone ? 'bg-emerald-300' : 'bg-gray-100'}`} style={{ minHeight: '20px' }} />
                       )}
                     </div>
@@ -275,12 +277,12 @@ export default function SupplierOrderDetail() {
           {nextStatus && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-semibold text-gray-800 mb-3">
-                Update to: <span className="text-emerald-600 capitalize">{nextStatus}</span>
+                {t('suppod.updateTo')} <span className="text-emerald-600 capitalize">{nextStatus}</span>
               </h3>
               <textarea
                 value={note}
                 onChange={e => setNote(e.target.value)}
-                placeholder={nextStatus === 'dispatched' ? 'e.g. Truck no. JH01A1234' : 'e.g. Customer ne receive kiya'}
+                placeholder={nextStatus === 'dispatched' ? t('suppod.notePh.dispatched') : t('suppod.notePh.delivered')}
                 rows={2}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none mb-3"
               />
@@ -289,7 +291,9 @@ export default function SupplierOrderDetail() {
                 disabled={updating}
                 className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 capitalize"
               >
-                {updating ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : <><Truck className="w-4 h-4" /> Mark as {nextStatus}</>}
+                {updating
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('suppod.updating')}</>
+                  : <><Truck className="w-4 h-4" /> {t('suppod.markAs', { status: nextStatus })}</>}
               </button>
             </div>
           )}
@@ -297,8 +301,8 @@ export default function SupplierOrderDetail() {
           {order.status === 'delivered' && (
             <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
-              <p className="font-semibold text-green-800">Order Complete!</p>
-              <p className="text-sm text-green-600 mt-1">Successfully delivered</p>
+              <p className="font-semibold text-green-800">{t('suppod.complete')}</p>
+              <p className="text-sm text-green-600 mt-1">{t('suppod.delivered')}</p>
             </div>
           )}
 
@@ -306,19 +310,19 @@ export default function SupplierOrderDetail() {
           {order.status === 'delivered' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Camera className="w-4 h-4 text-emerald-500" /> Delivery Proof
+                <Camera className="w-4 h-4 text-emerald-500" /> {t('suppod.proofTitle')}
               </h3>
               {order.deliveryProof?.submittedAt ? (
                 <div className="space-y-2 text-sm">
-                  <p className="text-gray-600 bg-gray-50 rounded-xl p-3">{order.deliveryProof.note || 'No note'}</p>
+                  <p className="text-gray-600 bg-gray-50 rounded-xl p-3">{order.deliveryProof.note || t('suppod.noNote')}</p>
                   {order.deliveryProof.photoUrl && (
                     <a href={order.deliveryProof.photoUrl} target="_blank" rel="noreferrer"
                       className="block text-blue-500 hover:underline text-xs break-all">
-                      View Photo
+                      {t('suppod.viewPhoto')}
                     </a>
                   )}
                   <p className="text-xs text-gray-400">
-                    Submitted: {new Date(order.deliveryProof.submittedAt).toLocaleString('en-IN')}
+                    {t('suppod.proofSubmittedAt')}{new Date(order.deliveryProof.submittedAt).toLocaleString('en-IN')}
                   </p>
                 </div>
               ) : (
@@ -326,12 +330,12 @@ export default function SupplierOrderDetail() {
                   <textarea
                     value={proofNote}
                     onChange={e => setProofNote(e.target.value)}
-                    placeholder="Delivery note — e.g. Customer ne ghar ke bahar receive kiya"
+                    placeholder={t('suppod.proofNotePh')}
                     rows={2}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
                   />
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Photo Upload (optional)</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('suppod.proofPhoto')}</label>
                     <input
                       type="file"
                       accept="image/*"
@@ -342,7 +346,7 @@ export default function SupplierOrderDetail() {
                   </div>
                   <button
                     onClick={async () => {
-                      if (!proofNote.trim()) { toast.error('Note likhein'); return; }
+                      if (!proofNote.trim()) { toast.error(t('suppod.proofNoteRequired')); return; }
                       setSubmittingProof(true);
                       try {
                         let photoUrl = '';
@@ -362,9 +366,9 @@ export default function SupplierOrderDetail() {
                           { headers: getAuthHeaders() }
                         );
                         setOrder(data.order);
-                        toast.success('Delivery proof submit ho gaya!');
+                        toast.success(t('suppod.proofSubmitted'));
                       } catch (err) {
-                        toast.error(err.response?.data?.message || 'Submit failed');
+                        toast.error(err.response?.data?.message || t('suppod.proofFail'));
                       } finally {
                         setSubmittingProof(false);
                       }
@@ -372,7 +376,9 @@ export default function SupplierOrderDetail() {
                     disabled={submittingProof || !proofNote.trim()}
                     className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
                   >
-                    {submittingProof ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : <><Camera className="w-4 h-4" /> Submit Proof</>}
+                    {submittingProof
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('suppod.submitting')}</>
+                      : <><Camera className="w-4 h-4" /> {t('suppod.submitProof')}</>}
                   </button>
                 </div>
               )}

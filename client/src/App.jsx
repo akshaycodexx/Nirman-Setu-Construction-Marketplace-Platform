@@ -4,6 +4,7 @@ import { AdminProvider, useAdmin } from './context/AdminContext';
 import { SupplierProvider, useSupplier } from './context/SupplierContext';
 import { CustomerProvider, useCustomer } from './context/CustomerContext';
 import { SocketProvider } from './context/SocketContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Public pages
 import Home from './pages/Home';
@@ -12,6 +13,8 @@ import TrackOrder from './pages/TrackOrder';
 import Receipt from './pages/Receipt';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 
 // Admin pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -103,6 +106,7 @@ function PublicCustomerGuard({ children }) {
 
 export default function App() {
   return (
+    <LanguageProvider>
     <SocketProvider>
     <AdminProvider>
       <SupplierProvider>
@@ -119,6 +123,8 @@ export default function App() {
             <Route path="/invoice/:orderId" element={<Invoice />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             {/* Admin */}
             <Route path="/admin/login" element={<PublicAdminGuard><AdminLogin /></PublicAdminGuard>} />
@@ -175,5 +181,6 @@ export default function App() {
       </SupplierProvider>
     </AdminProvider>
     </SocketProvider>
+    </LanguageProvider>
   );
 }

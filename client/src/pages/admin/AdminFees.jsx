@@ -3,6 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { BadgeIndianRupee, CheckCircle, Clock, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const STATUS_STYLE = {
   pending: 'bg-amber-100 text-amber-700',
@@ -11,6 +12,7 @@ const STATUS_STYLE = {
 };
 
 export default function AdminFees() {
+  const t = useT();
   const [fees, setFees] = useState([]);
   const [summary, setSummary] = useState({ pending: { total: 0, count: 0 }, paid: { total: 0, count: 0 }, waived: { total: 0, count: 0 } });
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export default function AdminFees() {
       const { data } = await axios.get(`/api/admin/fees?${params}&limit=50`);
       setFees(data.fees);
       setSummary(data.summary);
-    } catch { toast.error('Load failed'); }
+    } catch { toast.error(t('admin.common.loadFailed')); }
     setLoading(false);
   };
 
@@ -38,17 +40,17 @@ export default function AdminFees() {
     try {
       const { data } = await axios.patch(`/api/admin/fees/${fee._id}/status`, { status, waivedReason: 'Admin waived' });
       setFees(f => f.map(x => x._id === fee._id ? data.fee : x));
-      toast.success(status === 'paid' ? 'Paid mark ho gaya!' : 'Waived!');
+      toast.success(status === 'paid' ? t('admin.fees.paidMarked') : t('admin.fees.waived'));
       // refresh summary
       fetchFees();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || t('admin.common.failed')); }
     setUpdating(null);
   };
 
   const summaryCards = [
-    { label: 'Pending', key: 'pending', icon: Clock, color: 'bg-amber-50 border-amber-200 text-amber-800' },
-    { label: 'Collected', key: 'paid', icon: CheckCircle, color: 'bg-green-50 border-green-200 text-green-800' },
-    { label: 'Waived', key: 'waived', icon: XCircle, color: 'bg-gray-50 border-gray-200 text-gray-700' },
+    { label: t('status.pending'), key: 'pending', icon: Clock, color: 'bg-amber-50 border-amber-200 text-amber-800' },
+    { label: t('admin.fees.collected'), key: 'paid', icon: CheckCircle, color: 'bg-green-50 border-green-200 text-green-800' },
+    { label: t('admin.fees.waived'), key: 'waived', icon: XCircle, color: 'bg-gray-50 border-gray-200 text-gray-700' },
   ];
 
   return (
@@ -56,12 +58,12 @@ export default function AdminFees() {
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <BadgeIndianRupee className="w-6 h-6 text-orange-500" /> Platform Fees
+            <BadgeIndianRupee className="w-6 h-6 text-orange-500" /> {t('admin.nav.fees')}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Har order ka platform charge track karo</p>
+          <p className="text-gray-500 text-sm mt-0.5">{t('admin.fees.sub')}</p>
         </div>
         <button onClick={fetchFees} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
-          <RefreshCw className="w-4 h-4" /> Refresh
+          <RefreshCw className="w-4 h-4" /> {t('admin.common.refresh')}
         </button>
       </div>
 
@@ -74,7 +76,7 @@ export default function AdminFees() {
               <span className="text-xs font-semibold uppercase tracking-wide opacity-70">{s.label}</span>
             </div>
             <p className="text-2xl font-black">₹{(summary[s.key]?.total || 0).toLocaleString('en-IN')}</p>
-            <p className="text-xs opacity-60 mt-0.5">{summary[s.key]?.count || 0} fees</p>
+            <p className="text-xs opacity-60 mt-0.5">{t('admin.fees.feesCount', { n: summary[s.key]?.count || 0 })}</p>
           </div>
         ))}
       </div>
@@ -82,8 +84,8 @@ export default function AdminFees() {
       {/* Filters */}
       <div className="flex gap-2 mb-4 flex-wrap">
         <div className="flex gap-1 items-center">
-          <span className="text-xs font-medium text-gray-500">Status:</span>
-          {[['all', 'All'], ['pending', 'Pending'], ['paid', 'Paid'], ['waived', 'Waived']].map(([val, label]) => (
+          <span className="text-xs font-medium text-gray-500">{t('admin.common.status')}:</span>
+          {[['all', t('admin.common.all')], ['pending', t('status.pending')], ['paid', t('admin.fees.paid')], ['waived', t('admin.fees.waived')]].map(([val, label]) => (
             <button key={val} onClick={() => setStatusFilter(val)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 statusFilter === val ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -91,8 +93,8 @@ export default function AdminFees() {
           ))}
         </div>
         <div className="flex gap-1 items-center ml-4">
-          <span className="text-xs font-medium text-gray-500">Kaun dega:</span>
-          {[['all', 'All'], ['supplier', 'Supplier'], ['customer', 'Customer']].map(([val, label]) => (
+          <span className="text-xs font-medium text-gray-500">{t('admin.fees.whoPays')}:</span>
+          {[['all', t('admin.common.all')], ['supplier', t('admin.nav.suppliers')], ['customer', t('admin.nav.customers')]].map(([val, label]) => (
             <button key={val} onClick={() => setPaidByFilter(val)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 paidByFilter === val ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -108,7 +110,7 @@ export default function AdminFees() {
         ) : fees.length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <BadgeIndianRupee className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi fee record nahi mila</p>
+            <p>{t('admin.fees.empty')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -141,14 +143,14 @@ export default function AdminFees() {
                       className="flex items-center gap-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
                       {updating === fee._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                      Mark Paid
+                      {t('admin.fees.markPaid')}
                     </button>
                     <button
                       onClick={() => handleStatus(fee, 'waived')}
                       disabled={updating === fee._id}
                       className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      Waive
+                      {t('admin.fees.waive')}
                     </button>
                   </div>
                 )}

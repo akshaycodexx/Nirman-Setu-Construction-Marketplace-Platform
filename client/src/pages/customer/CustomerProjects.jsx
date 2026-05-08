@@ -7,35 +7,37 @@ import CustomerLayout from '../../components/CustomerLayout';
 import {
   FolderOpen, Plus, X, Loader2, MapPin, IndianRupee,
   Package, Hammer, ArrowRight, CheckCircle, Pause, Archive,
-  MoreVertical, Trash2, Edit3
+  MoreVertical, Trash2
 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const STATUS_CONFIG = {
-  active:    { label: 'Active',     color: 'bg-green-100 text-green-700',  icon: CheckCircle },
-  paused:    { label: 'Paused',     color: 'bg-yellow-100 text-yellow-700', icon: Pause },
-  completed: { label: 'Completed',  color: 'bg-blue-100 text-blue-700',    icon: Archive },
+const STATUS_CONFIG_KEYS = {
+  active:    { labelKey: 'custproj.status.active',    color: 'bg-green-100 text-green-700',  icon: CheckCircle },
+  paused:    { labelKey: 'custproj.status.paused',    color: 'bg-yellow-100 text-yellow-700', icon: Pause },
+  completed: { labelKey: 'custproj.status.completed', color: 'bg-blue-100 text-blue-700',    icon: Archive },
 };
 
 function CreateProjectModal({ onClose, onCreated }) {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [form, setForm] = useState({ name: '', description: '', city: '', address: '', estimatedBudget: '' });
   const [submitting, setSubmitting] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error('Project ka naam daalo'); return; }
+    if (!form.name.trim()) { toast.error(t('custproj.noName')); return; }
     setSubmitting(true);
     try {
       const { data } = await axios.post('/api/projects', {
         ...form,
         estimatedBudget: form.estimatedBudget ? Number(form.estimatedBudget) : undefined,
       }, { headers: authHeader() });
-      toast.success('Project create ho gaya!');
+      toast.success(t('custproj.created'));
       onCreated(data.project);
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed');
+      toast.error(err.response?.data?.message || t('custproj.createFail'));
     } finally {
       setSubmitting(false);
     }
@@ -45,46 +47,48 @@ function CreateProjectModal({ onClose, onCreated }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
       <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl overflow-y-auto max-h-[85vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white">
-          <h2 className="font-bold text-gray-900">Naya Project Banao</h2>
+          <h2 className="font-bold text-gray-900">{t('custproj.form.title')}</h2>
           <button onClick={onClose}><X className="w-4 h-4 text-gray-400" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Project Name *</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{t('custproj.form.name')}</label>
             <input value={form.name} onChange={e => set('name', e.target.value)}
-              placeholder="e.g. Ghar ka Nirman 2025, Factory Extension..."
+              placeholder={t('custproj.form.namePh')}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{t('custproj.form.desc')}</label>
             <textarea value={form.description} onChange={e => set('description', e.target.value)}
-              placeholder="Project ki thodi detail batao..."
+              placeholder={t('custproj.form.descPh')}
               rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">City</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">{t('custproj.form.city')}</label>
               <input value={form.city} onChange={e => set('city', e.target.value)}
-                placeholder="Patna..."
+                placeholder={t('custproj.form.cityPh')}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Budget (₹)</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">{t('custproj.form.budget')}</label>
               <input type="number" value={form.estimatedBudget} onChange={e => set('estimatedBudget', e.target.value)}
-                placeholder="Total estimate"
+                placeholder={t('custproj.form.budgetPh')}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Site Address</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{t('custproj.form.addr')}</label>
             <input value={form.address} onChange={e => set('address', e.target.value)}
-              placeholder="Construction site ka address"
+              placeholder={t('custproj.form.addrPh')}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
           </div>
           <button type="submit" disabled={submitting}
             className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl text-sm">
-            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <><Plus className="w-4 h-4" /> Create Project</>}
+            {submitting
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('custproj.form.creating')}</>
+              : <><Plus className="w-4 h-4" /> {t('custproj.form.create')}</>}
           </button>
         </form>
       </div>
@@ -93,8 +97,10 @@ function CreateProjectModal({ onClose, onCreated }) {
 }
 
 function ProjectCard({ project, onDelete }) {
+  const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
-  const st = STATUS_CONFIG[project.status] || STATUS_CONFIG.active;
+  const stKey = STATUS_CONFIG_KEYS[project.status] || STATUS_CONFIG_KEYS.active;
+  const st = { ...stKey, label: t(stKey.labelKey) };
   const StIcon = st.icon;
 
   const budgetUsed = project._totalQuoted || 0;
@@ -127,7 +133,7 @@ function ProjectCard({ project, onDelete }) {
             <div className="absolute right-0 top-8 bg-white border border-gray-100 rounded-xl shadow-lg z-10 w-36 overflow-hidden">
               <button onClick={() => { onDelete(project.projectId); setMenuOpen(false); }}
                 className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                <Trash2 className="w-3.5 h-3.5" /> Delete
+                <Trash2 className="w-3.5 h-3.5" /> {t('custproj.deleteMenu')}
               </button>
             </div>
           )}
@@ -139,19 +145,19 @@ function ProjectCard({ project, onDelete }) {
         <div className="bg-gray-50 rounded-xl p-2.5 text-center">
           <Package className="w-3.5 h-3.5 text-blue-400 mx-auto mb-0.5" />
           <p className="text-lg font-black text-gray-900">{project._ordersCount || 0}</p>
-          <p className="text-[10px] text-gray-400">Orders</p>
+          <p className="text-[10px] text-gray-400">{t('custproj.orders')}</p>
         </div>
         <div className="bg-gray-50 rounded-xl p-2.5 text-center">
           <Hammer className="w-3.5 h-3.5 text-amber-400 mx-auto mb-0.5" />
           <p className="text-lg font-black text-gray-900">{project._labourCount || 0}</p>
-          <p className="text-[10px] text-gray-400">Karigar</p>
+          <p className="text-[10px] text-gray-400">{t('custproj.karigar')}</p>
         </div>
         <div className="bg-gray-50 rounded-xl p-2.5 text-center">
           <IndianRupee className="w-3.5 h-3.5 text-green-400 mx-auto mb-0.5" />
           <p className="text-sm font-black text-gray-900">
             {project._totalSpent ? `₹${(project._totalSpent / 1000).toFixed(0)}k` : '₹0'}
           </p>
-          <p className="text-[10px] text-gray-400">Paid</p>
+          <p className="text-[10px] text-gray-400">{t('custproj.paid')}</p>
         </div>
       </div>
 
@@ -159,7 +165,7 @@ function ProjectCard({ project, onDelete }) {
       {project.estimatedBudget && (
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-gray-500">Budget used</span>
+            <span className="text-gray-500">{t('custproj.budgetUsed')}</span>
             <span className="font-semibold text-gray-700">
               ₹{budgetUsed.toLocaleString('en-IN')} / ₹{project.estimatedBudget.toLocaleString('en-IN')}
             </span>
@@ -170,12 +176,12 @@ function ProjectCard({ project, onDelete }) {
               style={{ width: `${budgetPct}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-0.5 text-right">{budgetPct}% used</p>
+          <p className="text-xs text-gray-400 mt-0.5 text-right">{t('custproj.pctUsed', { n: budgetPct })}</p>
         </div>
       )}
 
       <div className="flex items-center justify-end mt-2 text-xs text-blue-500 font-semibold">
-        Details dekho <ArrowRight className="w-3 h-3 ml-1" />
+        {t('custproj.detailsDekho')} <ArrowRight className="w-3 h-3 ml-1" />
       </div>
     </Link>
   );
@@ -183,6 +189,7 @@ function ProjectCard({ project, onDelete }) {
 
 export default function CustomerProjects() {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -192,7 +199,7 @@ export default function CustomerProjects() {
       const { data } = await axios.get('/api/projects', { headers: authHeader() });
       setProjects(data.projects || []);
     } catch {
-      toast.error('Load nahi ho saka');
+      toast.error(t('custproj.loadFail'));
     } finally {
       setLoading(false);
     }
@@ -201,61 +208,62 @@ export default function CustomerProjects() {
   useEffect(() => { fetchProjects(); }, []);
 
   const handleDelete = async (projectId) => {
-    if (!window.confirm('Ye project delete karoge? Orders/karigar unlink ho jayenge (delete nahi honge).')) return;
+    if (!window.confirm(t('custproj.deleteConfirm'))) return;
     try {
       await axios.delete(`/api/projects/${projectId}`, { headers: authHeader() });
       setProjects(prev => prev.filter(p => p.projectId !== projectId));
-      toast.success('Project delete ho gaya');
+      toast.success(t('custproj.deleted'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Delete failed');
+      toast.error(err.response?.data?.message || t('custproj.deleteFail'));
     }
   };
 
   const activeCount = projects.filter(p => p.status === 'active').length;
-  const totalBudget = projects.reduce((s, p) => s + (p.estimatedBudget || 0), 0);
   const totalSpent = projects.reduce((s, p) => s + (p._totalSpent || 0), 0);
+
+  const howSteps = [
+    { step: '1', text: t('custproj.step1') },
+    { step: '2', text: t('custproj.step2') },
+    { step: '3', text: t('custproj.step3') },
+  ];
 
   return (
     <CustomerLayout>
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-5 text-white">
+        <div className="bg-linear-to-r from-indigo-600 to-blue-600 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">My Projects</h1>
-              <p className="text-indigo-100 text-sm mt-0.5">Sab orders aur karigar ek project mein track karo</p>
+              <h1 className="text-xl font-bold">{t('custproj.title')}</h1>
+              <p className="text-indigo-100 text-sm mt-0.5">{t('custproj.sub')}</p>
             </div>
             <button onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 bg-white text-indigo-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50 transition-colors shrink-0">
-              <Plus className="w-4 h-4" /> New Project
+              <Plus className="w-4 h-4" /> {t('custproj.newProject')}
             </button>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{projects.length}</p>
-              <p className="text-xs text-indigo-100">Total</p>
+              <p className="text-xs text-indigo-100">{t('custproj.total')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{activeCount}</p>
-              <p className="text-xs text-indigo-100">Active</p>
+              <p className="text-xs text-indigo-100">{t('custproj.active')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-lg font-black">{totalSpent ? `₹${(totalSpent / 1000).toFixed(0)}k` : '₹0'}</p>
-              <p className="text-xs text-indigo-100">Paid Out</p>
+              <p className="text-xs text-indigo-100">{t('custproj.paidOut')}</p>
             </div>
           </div>
         </div>
 
         {/* How it works */}
         <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
-          <p className="text-xs font-bold text-indigo-800 mb-2">Project Tracker Kaise Use Karein?</p>
+          <p className="text-xs font-bold text-indigo-800 mb-2">{t('custproj.howTitle')}</p>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              { step: '1', text: 'Project banao — naam, city, budget daalo' },
-              { step: '2', text: 'Apne orders aur karigar bookings link karo' },
-              { step: '3', text: 'Total budget, spending, progress sab ek jagah dekho' },
-            ].map(s => (
+            {howSteps.map(s => (
               <div key={s.step} className="text-center">
                 <div className="w-7 h-7 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-bold mx-auto mb-1">{s.step}</div>
                 <p className="text-xs text-indigo-700">{s.text}</p>
@@ -272,11 +280,11 @@ export default function CustomerProjects() {
         ) : projects.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
             <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Koi project nahi abhi</p>
-            <p className="text-gray-400 text-sm mt-1">Pehla project banao — ghar, dukan, factory sab ka track rakho</p>
+            <p className="text-gray-500 font-medium">{t('custproj.noProj')}</p>
+            <p className="text-gray-400 text-sm mt-1">{t('custproj.noProjSub')}</p>
             <button onClick={() => setShowCreate(true)}
               className="mt-4 inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-              <Plus className="w-4 h-4" /> New Project
+              <Plus className="w-4 h-4" /> {t('custproj.newProject')}
             </button>
           </div>
         ) : (

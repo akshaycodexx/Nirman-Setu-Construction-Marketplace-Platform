@@ -4,16 +4,21 @@ import { Link } from 'react-router-dom';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout from '../../components/CustomerLayout';
 import { Bell, Package, IndianRupee, CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const TYPE_CONFIG = {
-  quote: { icon: Package, bg: 'bg-blue-100', color: 'text-blue-600', label: 'Quote Received' },
-  payment: { icon: IndianRupee, bg: 'bg-green-100', color: 'text-green-600', label: 'Payment Confirmed' },
-  complaint: { icon: CheckCircle, bg: 'bg-purple-100', color: 'text-purple-600', label: 'Complaint Update' },
-  status: { icon: AlertCircle, bg: 'bg-orange-100', color: 'text-orange-600', label: 'Status Update' },
+const TYPE_CONFIG_BASE = {
+  quote:     { icon: Package,      bg: 'bg-blue-100',   color: 'text-blue-600',   labelKey: 'notif.quote' },
+  payment:   { icon: IndianRupee,  bg: 'bg-green-100',  color: 'text-green-600',  labelKey: 'notif.payment' },
+  complaint: { icon: CheckCircle,  bg: 'bg-purple-100', color: 'text-purple-600', labelKey: 'notif.complaint' },
+  status:    { icon: AlertCircle,  bg: 'bg-orange-100', color: 'text-orange-600', labelKey: 'notif.statusUpdate' },
 };
 
 export default function CustomerNotifications() {
   const { authHeader } = useCustomer();
+  const t = useT();
+  const TYPE_CONFIG = Object.fromEntries(
+    Object.entries(TYPE_CONFIG_BASE).map(([k, v]) => [k, { ...v, label: t(v.labelKey) }])
+  );
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +34,8 @@ export default function CustomerNotifications() {
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-blue-500" />
-          <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
-          <span className="text-xs text-gray-400 ml-1">Last 48 hours</span>
+          <h1 className="text-xl font-bold text-gray-900">{t('notif.title')}</h1>
+          <span className="text-xs text-gray-400 ml-1">{t('notif.last48h')}</span>
         </div>
 
         {loading ? (
@@ -40,8 +45,8 @@ export default function CustomerNotifications() {
         ) : notifs.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
             <Bell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm font-medium">Koi naya notification nahi</p>
-            <p className="text-gray-400 text-xs mt-1">Aapke orders ki updates yahan aayengi</p>
+            <p className="text-gray-500 text-sm font-medium">{t('notif.empty')}</p>
+            <p className="text-gray-400 text-xs mt-1">{t('notif.emptySub')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
@@ -59,7 +64,7 @@ export default function CustomerNotifications() {
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{cfg.label}</span>
                     </div>
                     <p className="text-sm font-semibold text-gray-900">
-                      Order {n.orderId} — <span className="capitalize">{n.status?.replace('_', ' ')}</span>
+                      {t('notif.order', { id: n.orderId, status: n.status?.replace('_', ' ') })}
                     </p>
                     {n.note && <p className="text-xs text-gray-500 mt-0.5 truncate">{n.note}</p>}
                     <p className="text-xs text-gray-400 mt-1">

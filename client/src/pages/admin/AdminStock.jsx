@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { useAdmin } from '../../context/AdminContext';
 import { Boxes, Search, Loader2, MapPin, CheckCircle, XCircle, Star, Filter } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const CATEGORIES = [
   { id: '', label: 'All Categories' },
@@ -30,6 +31,7 @@ const CAT_COLOR = {
 
 export default function AdminStock() {
   const { getAuthHeaders } = useAdmin();
+  const t = useT();
   const [stock, setStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ q: '', category: '', city: '', available: '' });
@@ -48,7 +50,7 @@ export default function AdminStock() {
       const { data } = await axios.get(`/api/stock/admin/all?${params}`, { headers: getAuthHeaders() });
       setStock(data.stock || []);
     } catch {
-      toast.error('Stock load nahi hua');
+      toast.error(t('admin.stock.loadFailed'));
     } finally {
       setLoading(false);
       setSearching(false);
@@ -76,22 +78,22 @@ export default function AdminStock() {
               <Boxes className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Supplier Stock Directory</h1>
+              <h1 className="text-xl font-bold">{t('admin.nav.stock')}</h1>
               <p className="text-teal-100 text-sm mt-0.5">Dekho kiske paas kya available hai — order assign karne se pehle</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{stock.length}</p>
-              <p className="text-xs text-teal-100">Total Listings</p>
+              <p className="text-xs text-teal-100">{t('admin.stock.totalListings')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{availableCount}</p>
-              <p className="text-xs text-teal-100">Available Now</p>
+              <p className="text-xs text-teal-100">{t('admin.stock.availableNow')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{uniqueSuppliers}</p>
-              <p className="text-xs text-teal-100">Suppliers</p>
+              <p className="text-xs text-teal-100">{t('admin.nav.suppliers')}</p>
             </div>
           </div>
         </div>
@@ -104,7 +106,7 @@ export default function AdminStock() {
               <input
                 value={filters.q}
                 onChange={e => setF('q', e.target.value)}
-                placeholder="Material search karo..."
+                placeholder={t('admin.stock.searchPh')}
                 className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
             </div>
@@ -115,15 +117,15 @@ export default function AdminStock() {
             <input
               value={filters.city}
               onChange={e => setF('city', e.target.value)}
-              placeholder="City filter..."
+              placeholder={t('admin.orders.cityPh')}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
             <div className="flex gap-2">
               <select value={filters.available} onChange={e => setF('available', e.target.value)}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
-                <option value="">All Status</option>
-                <option value="true">Available Only</option>
-                <option value="false">Unavailable</option>
+                <option value="">{t('admin.stock.allStatus')}</option>
+                <option value="true">{t('admin.stock.availableOnly')}</option>
+                <option value="false">{t('admin.stock.unavailable')}</option>
               </select>
               <button type="submit" disabled={searching}
                 className="px-4 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5">
@@ -141,7 +143,7 @@ export default function AdminStock() {
         ) : stock.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
             <Boxes className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Koi stock nahi mila</p>
+            <p className="text-gray-500 font-medium">{t('admin.stock.empty')}</p>
             <p className="text-gray-400 text-sm mt-1">Suppliers abhi tak stock list nahi kar rahe — unhe batao</p>
           </div>
         ) : (

@@ -7,6 +7,7 @@ import {
   TrendingUp, Plus, X, Loader2, Edit3, Trash2, ToggleLeft, ToggleRight,
   RefreshCw, IndianRupee, Tag
 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const CATEGORIES = [
   { id: 'all', label: 'All' },
@@ -120,6 +121,7 @@ function RateModal({ initial, onClose, onSave }) {
 
 export default function AdminRates() {
   const { getAuthHeaders } = useAdmin();
+  const t = useT();
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
@@ -132,7 +134,7 @@ export default function AdminRates() {
       const { data } = await axios.get('/api/rates/admin', { headers: getAuthHeaders() });
       setRates(data.rates || []);
     } catch {
-      toast.error('Rates load nahi hue');
+      toast.error(t('admin.rates.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -197,7 +199,7 @@ export default function AdminRates() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" /> Material Rate Board
+                <TrendingUp className="w-5 h-5" /> {t('admin.nav.rates')}
               </h1>
               <p className="text-orange-100 text-sm mt-0.5">Live market rates — customers aur estimator mein dikhega</p>
             </div>
@@ -206,27 +208,27 @@ export default function AdminRates() {
                 <button onClick={handleSeed} disabled={seeding}
                   className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-2 rounded-xl transition-colors">
                   {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Seed Defaults
+                  {t('admin.rates.seedDefaults')}
                 </button>
               )}
               <button onClick={() => { setEditRate(null); setShowModal(true); }}
                 className="flex items-center gap-2 bg-white text-orange-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-orange-50 transition-colors shrink-0">
-                <Plus className="w-4 h-4" /> Add Rate
+                <Plus className="w-4 h-4" /> {t('admin.rates.addRate')}
               </button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{rates.length}</p>
-              <p className="text-xs text-orange-100">Total Rates</p>
+              <p className="text-xs text-orange-100">{t('admin.rates.totalRates')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{activeCount}</p>
-              <p className="text-xs text-orange-100">Active</p>
+              <p className="text-xs text-orange-100">{t('admin.rates.active')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3 text-center">
               <p className="text-2xl font-black">{new Set(rates.map(r => r.category)).size}</p>
-              <p className="text-xs text-orange-100">Categories</p>
+              <p className="text-xs text-orange-100">{t('admin.orders.category')}</p>
             </div>
           </div>
         </div>

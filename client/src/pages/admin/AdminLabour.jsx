@@ -5,6 +5,7 @@ import {
   Hammer, Zap, Wrench, Paintbrush, HardHat, Scissors, Layers, MoreHorizontal,
   MapPin, Calendar, Users, Clock, IndianRupee, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const JOB_TYPES = [
   { value: 'mason',        label: 'Raj Mistri',   icon: HardHat,        color: 'bg-orange-100 text-orange-700' },
@@ -115,6 +116,7 @@ function RequestRow({ request }) {
 }
 
 export default function AdminLabour() {
+  const t = useT();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -152,7 +154,7 @@ export default function AdminLabour() {
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Labour Requests</h1>
+            <h1 className="text-xl font-bold text-white">{t('admin.nav.labour')}</h1>
             <p className="text-gray-400 text-sm">Karigar booking requests — customer se contractor tak</p>
           </div>
         </div>
@@ -160,10 +162,10 @@ export default function AdminLabour() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: total, color: 'text-white' },
-            { label: 'Open', value: openCount, color: 'text-green-400' },
-            { label: 'Accepted', value: acceptedCount, color: 'text-blue-400' },
-            { label: 'Total Bids', value: totalBids, color: 'text-orange-400' },
+            { label: t('admin.labour.total'), value: total, color: 'text-white' },
+            { label: t('admin.quotes.open'), value: openCount, color: 'text-green-400' },
+            { label: t('admin.quotes.accepted'), value: acceptedCount, color: 'text-blue-400' },
+            { label: t('admin.labour.totalBids'), value: totalBids, color: 'text-orange-400' },
           ].map(s => (
             <div key={s.label} className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
               <p className="text-gray-400 text-xs">{s.label}</p>
@@ -182,7 +184,7 @@ export default function AdminLabour() {
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-500'
               }`}>
-              {s || 'All'}
+              {s ? t(`admin.quotes.${s}`) : t('admin.common.all')}
             </button>
           ))}
         </div>
@@ -195,7 +197,7 @@ export default function AdminLabour() {
         ) : requests.length === 0 ? (
           <div className="bg-gray-800 rounded-2xl border border-gray-700 py-16 text-center">
             <HardHat className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">Koi labour request nahi</p>
+            <p className="text-gray-400">{t('admin.labour.empty')}</p>
           </div>
         ) : (
           <div className="space-y-3">

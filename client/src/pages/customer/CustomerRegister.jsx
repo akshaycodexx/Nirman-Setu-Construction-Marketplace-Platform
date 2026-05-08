@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import { HardHat, Eye, EyeOff, Loader2 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 export default function CustomerRegister() {
   const { loginCustomer } = useCustomer();
@@ -11,6 +12,7 @@ export default function CustomerRegister() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const t = useT();
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
@@ -39,25 +41,25 @@ export default function CustomerRegister() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500 rounded-2xl mb-4">
             <HardHat className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Create Account</h1>
-          <p className="text-gray-400 text-sm mt-1">Nirman Setu — Get Started</p>
+          <h1 className="text-2xl font-bold text-white">{t('auth.cust.reg.title')}</h1>
+          <p className="text-gray-400 text-sm mt-1">{t('auth.cust.reg.sub')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-gray-800 rounded-2xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Full Name</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.name')}</label>
             <input type="text" required value={form.name} onChange={set('name')} placeholder="Ramesh Kumar" className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.phone')}</label>
             <input type="tel" required value={form.phone} onChange={set('phone')} placeholder="9876543210" className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email <span className="text-gray-500 text-xs">(optional)</span></label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.email')} <span className="text-gray-500 text-xs">({t('common.optional')})</span></label>
             <input type="email" value={form.email} onChange={set('email')} placeholder="ramesh@example.com" className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.password')}</label>
             <div className="relative">
               <input
                 type={showPass ? 'text' : 'password'}
@@ -76,13 +78,13 @@ export default function CustomerRegister() {
 
           <button type="submit" disabled={loading}
             className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2">
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</> : 'Create Account'}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('auth.creating')}</> : t('auth.createBtn')}
           </button>
         </form>
 
         <p className="text-center text-gray-500 text-sm mt-4">
-          Already have an account?{' '}
-          <Link to="/customer/login" className="text-blue-400 hover:text-blue-300 font-medium">Login</Link>
+          {t('auth.haveAccount')}{' '}
+          <Link to="/customer/login" className="text-blue-400 hover:text-blue-300 font-medium">{t('auth.loginLink')}</Link>
         </p>
       </div>
     </div>

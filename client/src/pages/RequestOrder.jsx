@@ -6,7 +6,8 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useCustomer } from '../context/CustomerContext';
 import WhatsAppButton from '../components/WhatsAppButton';
-import { Plus, Trash2, CheckCircle, ArrowLeft, ArrowRight, Loader2, User } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, ArrowLeft, ArrowRight, Loader2, User, Copy, Check } from 'lucide-react';
+import useT from '../i18n/useT';
 
 // ── All units pool ───────────────────────────────────────────────────────────
 const ALL_UNITS = [
@@ -303,6 +304,40 @@ const ITEMS_MAP = {
   ],
 };
 
+// ── Popular brands per category ──────────────────────────────────────────────
+const BRAND_MAP = {
+  basic_materials:    ['Ultratech', 'JK Cement', 'ACC', 'Ambuja', 'Shree Cement', 'Wonder Cement', 'Tata Steel', 'SAIL', 'Hiscon'],
+  structural:         ['Ultratech', 'ACC', 'Ambuja', 'JK Cement', 'Shree Cement'],
+  wood_carpentry:     ['CenturyPly', 'Greenply', 'Kitply', 'National Plywood', 'Duratuf', 'Merino', 'Greenlam'],
+  chemicals:          ['Dr. Fixit', 'Pidilite', 'Fosroc', 'STP', 'MYK Laticrete', 'Fevicol', 'Sika'],
+  paint_finishing:    ['Asian Paints', 'Berger', 'Nerolac', 'Dulux', 'Indigo', 'Nippon Paint', 'Jotun'],
+  flooring_tiling:    ['Kajaria', 'Somany', 'Johnson Tiles', 'Orient Bell', 'Nitco', 'RAK Ceramics', 'Simpolo'],
+  doors_windows:      ['Godrej', 'Fenesta', 'Veka', 'Rehau', 'Alumil', 'Jindal', 'Yale'],
+  interior_furniture: ['Hafele', 'Hettich', 'Godrej Interio', 'Nilkamal', 'Durian', 'Stanley'],
+  electrical:         ['Havells', 'Polycab', 'Finolex', 'Schneider', 'Anchor', 'Legrand', 'Syska', 'Crompton', 'Bajaj'],
+  plumbing_sanitary:  ['Jaquar', 'Hindware', 'Cera', 'Parryware', 'Astral', 'Finolex Pipes', 'Ashirvad', 'Supreme', 'VECTUS'],
+  smart_features:     ['Havells', 'Schneider', 'Honeywell', 'Hikvision', 'CP Plus', 'Luminous', 'Microtek'],
+};
+
+const DRAFT_KEY = 'ns_order_draft';
+
+// ── Compress image to ≤ 1200px / JPEG 0.72 ───────────────────────────────────
+const compressImage = (file) => new Promise((resolve) => {
+  const img = new Image();
+  const blobUrl = URL.createObjectURL(file);
+  img.onload = () => {
+    URL.revokeObjectURL(blobUrl);
+    const MAX = 1200;
+    const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+    const canvas = document.createElement('canvas');
+    canvas.width  = Math.round(img.width  * ratio);
+    canvas.height = Math.round(img.height * ratio);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    resolve(canvas.toDataURL('image/jpeg', 0.72));
+  };
+  img.src = blobUrl;
+});
+
 const SLOTS = [
   { id: 'morning', label: 'Morning', time: '7 AM – 12 PM' },
   { id: 'evening', label: 'Evening', time: '12 PM – 6 PM' },
@@ -311,7 +346,7 @@ const SLOTS = [
 
 const TOTAL_STEPS = 4;
 
-const emptyItem = () => ({ name: '', customName: '', quantity: '', unit: '' });
+const emptyItem = () => ({ name: '', customName: '', quantity: '', unit: '', brandSel: '', brandCustom: '', itemNote: '' });
 
 const getItemData = (categoryId, itemName) =>
   (ITEMS_MAP[categoryId] || []).find(it => it.name === itemName);
@@ -320,10 +355,17 @@ export default function RequestOrder() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { customer } = useCustomer();
+  const t = useT();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState(null);
   const [catSearch, setCatSearch] = useState('');
+  const [copiedId, setCopiedId] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState(null);
 
   const urlCat = params.get('category');
   const validUrlCat = urlCat && ITEMS_MAP[urlCat] ? urlCat : '';
@@ -335,6 +377,10 @@ export default function RequestOrder() {
     customer: { name: '', phone: '', email: '' },
     notes: '',
     isUrgent: false,
+    budget: '',
+    gstRequired: false,
+    gstin: '',
+    paymentPref: 'advance',
   });
 
   useEffect(() => {
@@ -349,6 +395,40 @@ export default function RequestOrder() {
       }));
     }
   }, [customer]);
+
+  // Draft check on mount
+  useEffect(() => {
+    setHasDraft(!!localStorage.getItem(DRAFT_KEY));
+  }, []);
+
+  // Recent orders for Quick Reorder (fetch once when customer is available)
+  useEffect(() => {
+    if (!customer) return;
+    const token = localStorage.getItem('customerToken');
+    if (!token) return;
+    setRecentLoading(true);
+    axios.get('/api/orders/my-orders?limit=5', { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => setRecentOrders(data.orders || []))
+      .catch(() => {})
+      .finally(() => setRecentLoading(false));
+  }, [customer]);
+
+  // Pincode availability check (debounced 800ms)
+  useEffect(() => {
+    const pc = form.delivery.pincode;
+    if (pc.length !== 6) { setPincodeStatus(null); return; }
+    setPincodeStatus('checking');
+    const timer = setTimeout(() => {
+      axios.get(`/api/check/pincode?pincode=${pc}`)
+        .then(({ data }) => {
+          if (data.supplierCount > 2 || data.available === true) setPincodeStatus('available');
+          else if (data.supplierCount > 0 || data.limited === true) setPincodeStatus('limited');
+          else setPincodeStatus('unavailable');
+        })
+        .catch(() => setPincodeStatus(null));
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [form.delivery.pincode]);
 
   const itemOptions = ITEMS_MAP[form.category] || [];
 
@@ -375,6 +455,74 @@ export default function RequestOrder() {
   const updateDelivery = (field, value) => setForm(f => ({ ...f, delivery: { ...f.delivery, [field]: value } }));
   const updateCustomer = (field, value) => setForm(f => ({ ...f, customer: { ...f.customer, [field]: value } }));
 
+  const copyOrderId = () => {
+    navigator.clipboard.writeText(submittedOrderId).then(() => {
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    });
+  };
+
+  const handlePhotoAdd = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const remaining = 5 - photos.length;
+    if (remaining <= 0) { toast.error(t('req.photo.maxErr')); return; }
+    const oversized = files.some(f => f.size > 5 * 1024 * 1024);
+    if (oversized) { toast.error(t('req.photo.sizeErr')); return; }
+    const toAdd = files.slice(0, remaining).map(f => ({
+      id: `${Date.now()}-${Math.random()}`,
+      file: f,
+      preview: URL.createObjectURL(f),
+    }));
+    setPhotos(p => [...p, ...toAdd]);
+    e.target.value = '';
+  };
+
+  const removePhoto = (id) => {
+    setPhotos(p => {
+      const found = p.find(ph => ph.id === id);
+      if (found) URL.revokeObjectURL(found.preview);
+      return p.filter(ph => ph.id !== id);
+    });
+  };
+
+  const saveDraft = () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step }));
+    toast.success(t('req.draft.saved'));
+  };
+
+  const loadDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const { form: f, step: s } = JSON.parse(raw);
+      setForm(f);
+      setStep(s);
+    } catch (_) {}
+    setHasDraft(false);
+    localStorage.removeItem(DRAFT_KEY);
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+  };
+
+  const quickReorder = (order) => {
+    if (!ITEMS_MAP[order.category]) return;
+    setForm(f => ({
+      ...f,
+      category: order.category,
+      items: (order.items || []).slice(0, 8).map(it => ({
+        ...emptyItem(),
+        name: it.name || '',
+        quantity: String(it.quantity || ''),
+        unit: it.unit || '',
+      })),
+    }));
+    setStep(2);
+  };
+
   const canNext = () => {
     if (step === 1) return !!form.category;
     if (step === 2) return form.items.every(it => {
@@ -382,26 +530,43 @@ export default function RequestOrder() {
       return name && it.quantity && Number(it.quantity) > 0 && it.unit;
     });
     if (step === 3) return form.delivery.address && form.delivery.city && form.delivery.date;
-    if (step === 4) return form.customer.name && /^[6-9]\d{9}$/.test(form.customer.phone);
+    if (step === 4) {
+      const phoneOk = /^[6-9]\d{9}$/.test(form.customer.phone);
+      const gstOk = !form.gstRequired || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(form.gstin);
+      return form.customer.name && phoneOk && gstOk;
+    }
     return true;
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      const compressedPhotos = photos.length > 0
+        ? await Promise.all(photos.map(p => compressImage(p.file)))
+        : [];
       const payload = {
         ...form,
-        items: form.items.map(it => ({
-          name: it.name === 'Other' ? it.customName : it.name,
-          quantity: Number(it.quantity),
-          unit: it.unit,
-        })),
+        items: form.items.map(it => {
+          const brand = it.brandSel === '__custom__' ? it.brandCustom : it.brandSel;
+          return {
+            name: it.name === 'Other' ? it.customName : it.name,
+            quantity: Number(it.quantity),
+            unit: it.unit,
+            ...(brand      && { brand }),
+            ...(it.itemNote && { note: it.itemNote }),
+          };
+        }),
         urgentDelivery: { isUrgent: form.isUrgent },
+        ...(form.budget              && { budget: Number(form.budget) }),
+        ...(form.gstRequired         && { gstin: form.gstin }),
+        ...(compressedPhotos.length  && { photos: compressedPhotos }),
+        paymentPref: form.paymentPref,
       };
       const customerToken = localStorage.getItem('customerToken');
       const headers = customerToken ? { Authorization: `Bearer ${customerToken}` } : {};
       const { data } = await axios.post('/api/orders/request', payload, { headers });
       setSubmittedOrderId(data.orderId);
+      localStorage.removeItem(DRAFT_KEY);
       toast.success('Order submitted! We will contact you shortly.');
     } catch (err) {
       const msg = err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'Something went wrong';
@@ -432,21 +597,27 @@ export default function RequestOrder() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-10 h-10 text-green-500" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Request Submitted!</h1>
-            <p className="text-gray-500 mb-6">Hum 2 ghante ke andar call/WhatsApp karenge best quote ke saath.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('req.success.title')}</h1>
+            <p className="text-gray-500 mb-6">{t('req.success.sub')}</p>
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-              <p className="text-sm text-gray-500 mb-1">Tumhara Order ID</p>
+              <p className="text-sm text-gray-500 mb-1">{t('req.success.idLabel')}</p>
               <p className="text-2xl font-black text-orange-500 tracking-wider">{submittedOrderId}</p>
-              <p className="text-xs text-gray-400 mt-1">Is ID se order track kar sakte ho</p>
+              <p className="text-xs text-gray-400 mt-1">{t('req.success.trackHint')}</p>
+              <button onClick={copyOrderId}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                {copiedId
+                  ? <><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-green-600 font-medium">{t('req.success.copied')}</span></>
+                  : <><Copy className="w-3.5 h-3.5" />{t('req.success.copyId')}</>}
+              </button>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={() => navigate(`/track/${submittedOrderId}`)}
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-colors">
-                Track Order
+                {t('req.success.trackBtn')}
               </button>
-              <button onClick={() => { setSubmittedOrderId(null); setStep(1); setForm({ category: '', items: [emptyItem()], delivery: { address: '', city: '', pincode: '', date: '', slot: 'anytime' }, customer: { name: '', phone: '', email: '' }, notes: '' }); }}
+              <button onClick={() => { photos.forEach(p => URL.revokeObjectURL(p.preview)); setPhotos([]); setSubmittedOrderId(null); setCopiedId(false); setStep(1); setForm({ category: '', items: [emptyItem()], delivery: { address: '', city: '', pincode: '', date: '', slot: 'anytime' }, customer: { name: '', phone: '', email: '' }, notes: '', isUrgent: false, budget: '', gstRequired: false, gstin: '', paymentPref: 'advance' }); }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors">
-                Nayi Request
+                {t('req.success.newReq')}
               </button>
             </div>
           </div>
@@ -462,18 +633,34 @@ export default function RequestOrder() {
       <Navbar />
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
+        {/* Draft banner */}
+        {hasDraft && (
+          <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <span className="text-lg shrink-0">📝</span>
+            <p className="flex-1 text-sm text-amber-800 font-medium">{t('req.draft.banner')}</p>
+            <button onClick={loadDraft}
+              className="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-900 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors">
+              {t('req.draft.continue')}
+            </button>
+            <button onClick={discardDraft}
+              className="shrink-0 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+              {t('req.draft.discard')}
+            </button>
+          </div>
+        )}
+
         {/* Progress bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Step {step} of {TOTAL_STEPS}</span>
-            <span className="text-sm text-gray-400">{Math.round((step / TOTAL_STEPS) * 100)}% complete</span>
+            <span className="text-sm font-medium text-gray-600">{t('req.step', { n: step, total: TOTAL_STEPS })}</span>
+            <span className="text-sm text-gray-400">{t('req.complete', { pct: Math.round((step / TOTAL_STEPS) * 100) })}</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-orange-500 rounded-full transition-all duration-300"
               style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
           </div>
           <div className="flex justify-between mt-1.5">
-            {['Category', 'Items', 'Delivery', 'Contact'].map((label, i) => (
+            {[t('req.steps.category'), t('req.steps.items'), t('req.steps.delivery'), t('req.steps.contact')].map((label, i) => (
               <span key={label} className={`text-xs ${i + 1 <= step ? 'text-orange-500 font-medium' : 'text-gray-400'}`}>
                 {label}
               </span>
@@ -486,17 +673,53 @@ export default function RequestOrder() {
           {/* ── Step 1: Category ── */}
           {step === 1 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Kya chahiye?</h2>
-              <p className="text-gray-500 text-sm mb-4">Category select karo — 21 options available hain</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">{t('req.s1.title')}</h2>
+              <p className="text-gray-500 text-sm mb-4">{t('req.s1.sub')}</p>
 
               {/* Search */}
               <input
                 type="text"
                 value={catSearch}
                 onChange={e => setCatSearch(e.target.value)}
-                placeholder="Search category..."
+                placeholder={t('req.catSearch')}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-orange-400"
               />
+
+              {/* Quick Reorder — only for logged-in customers with past orders */}
+              {customer && (recentLoading || recentOrders.length > 0) && (
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    {t('req.reorder.title')}
+                  </p>
+                  {recentLoading ? (
+                    <div className="flex items-center gap-2 text-gray-400 text-sm py-1">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('common.loading')}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                      {recentOrders.map(order => {
+                        const cat = MASTER_CATEGORIES.find(c => c.id === order.category);
+                        return (
+                          <button key={order.orderId || order._id}
+                            onClick={() => quickReorder(order)}
+                            className="shrink-0 flex items-center gap-2 px-3 py-2 bg-white border-2 border-gray-100 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all text-left max-w-50">
+                            <span className="text-xl shrink-0">{cat?.emoji || '📦'}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-gray-700 truncate">{cat?.label || order.category}</p>
+                              <p className="text-xs text-gray-400 truncate">
+                                {(order.items || []).slice(0, 2).map(it => it.name).join(', ')}
+                              </p>
+                            </div>
+                            <span className="text-xs text-orange-500 font-semibold shrink-0">
+                              {t('req.reorder.btn')}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2 max-h-[420px] overflow-y-auto pr-1">
                 {filteredCats.map(cat => (
@@ -519,7 +742,7 @@ export default function RequestOrder() {
                   </button>
                 ))}
                 {filteredCats.length === 0 && (
-                  <div className="col-span-2 py-8 text-center text-gray-400 text-sm">No category found</div>
+                  <div className="col-span-2 py-8 text-center text-gray-400 text-sm">{t('req.catNone')}</div>
                 )}
               </div>
             </div>
@@ -528,11 +751,11 @@ export default function RequestOrder() {
           {/* ── Step 2: Items ── */}
           {step === 2 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-0.5">Kya kya chahiye?</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-0.5">{t('req.s2.title')}</h2>
               <p className="text-gray-500 text-sm mb-1">
-                Category: <span className="font-medium text-orange-600">{selectedCat?.emoji} {selectedCat?.label}</span>
+                {t('req.steps.category')}: <span className="font-medium text-orange-600">{selectedCat?.emoji} {selectedCat?.label}</span>
               </p>
-              <p className="text-gray-400 text-xs mb-5">Items aur quantity batao</p>
+              <p className="text-gray-400 text-xs mb-5">{t('req.s2.sub')}</p>
 
               <div className="space-y-4">
                 {form.items.map((item, i) => {
@@ -546,14 +769,14 @@ export default function RequestOrder() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Item {i + 1}</p>
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">{t('req.item.label', { n: i + 1 })}</p>
                       <div className="space-y-3">
                         {/* Item Name */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.name')}</label>
                           <select value={item.name} onChange={e => updateItem(i, 'name', e.target.value)}
                             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
-                            <option value="">-- Select Item --</option>
+                            <option value="">{t('req.item.select')}</option>
                             {itemOptions.map(opt => <option key={opt.name} value={opt.name}>{opt.name}</option>)}
                           </select>
                         </div>
@@ -561,7 +784,7 @@ export default function RequestOrder() {
                         {/* Custom name for Other */}
                         {item.name === 'Other' && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Item ka naam batao</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.customName')}</label>
                             <input type="text" value={item.customName}
                               onChange={e => updateItem(i, 'customName', e.target.value)}
                               placeholder="Jaise: Fly Ash Brick"
@@ -572,20 +795,49 @@ export default function RequestOrder() {
                         {/* Quantity + Unit */}
                         <div className="flex gap-3">
                           <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.qty')}</label>
                             <input type="number" min="1" value={item.quantity}
                               onChange={e => updateItem(i, 'quantity', e.target.value)}
                               placeholder="e.g. 50"
                               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                           </div>
                           <div className="w-36">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.unit')}</label>
                             <select value={item.unit} onChange={e => updateItem(i, 'unit', e.target.value)}
                               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
-                              {!item.unit && <option value="">-- Unit --</option>}
+                              {!item.unit && <option value="">{t('req.item.unitSelect')}</option>}
                               {availableUnits.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                           </div>
+                        </div>
+
+                        {/* Brand preference — only for categories that have brands */}
+                        {BRAND_MAP[form.category] && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.brand')}</label>
+                            <select value={item.brandSel}
+                              onChange={e => updateItem(i, 'brandSel', e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+                              <option value="">{t('req.item.brandSelect')}</option>
+                              {BRAND_MAP[form.category].map(b => <option key={b} value={b}>{b}</option>)}
+                              <option value="__custom__">{t('req.item.brandOther')}</option>
+                            </select>
+                            {item.brandSel === '__custom__' && (
+                              <input type="text" value={item.brandCustom}
+                                onChange={e => updateItem(i, 'brandCustom', e.target.value)}
+                                placeholder={t('req.item.brandTypePh')}
+                                className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Item note */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.item.note')}</label>
+                          <input type="text" value={item.itemNote}
+                            onChange={e => updateItem(i, 'itemNote', e.target.value)}
+                            placeholder={t('req.item.notePh')}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                         </div>
                       </div>
                     </div>
@@ -594,7 +846,7 @@ export default function RequestOrder() {
               </div>
               <button onClick={addItem}
                 className="mt-3 flex items-center gap-2 text-orange-500 hover:text-orange-600 text-sm font-medium">
-                <Plus className="w-4 h-4" /> Aur item add karo
+                <Plus className="w-4 h-4" /> {t('req.item.add')}
               </button>
             </div>
           )}
@@ -602,36 +854,56 @@ export default function RequestOrder() {
           {/* ── Step 3: Delivery ── */}
           {step === 3 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Delivery Details</h2>
-              <p className="text-gray-500 text-sm mb-6">Kahan aur kab chahiye?</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">{t('req.s3.title')}</h2>
+              <p className="text-gray-500 text-sm mb-6">{t('req.s3.sub')}</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Site Address <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.del.address')} <span className="text-red-400">*</span></label>
                   <textarea value={form.delivery.address} onChange={e => updateDelivery('address', e.target.value)}
-                    placeholder="Gali, mohalla, landmark..." rows={2}
+                    placeholder={t('req.del.addressPh')} rows={2}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
                 </div>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-400">*</span></label>
-                    <input type="text" value={form.delivery.city} onChange={e => updateDelivery('city', e.target.value)}
-                      placeholder="Ranchi"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                <div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.del.city')} <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.delivery.city} onChange={e => updateDelivery('city', e.target.value)}
+                        placeholder="Ranchi"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                    </div>
+                    <div className="w-32">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.del.pincode')}</label>
+                      <input type="text" maxLength={6} value={form.delivery.pincode}
+                        onChange={e => updateDelivery('pincode', e.target.value.replace(/\D/g, ''))}
+                        placeholder="834001"
+                        className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                          pincodeStatus === 'available'   ? 'border-green-400' :
+                          pincodeStatus === 'limited'     ? 'border-yellow-400' :
+                          pincodeStatus === 'unavailable' ? 'border-red-300' : 'border-gray-200'
+                        }`} />
+                    </div>
                   </div>
-                  <div className="w-32">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                    <input type="text" maxLength={6} value={form.delivery.pincode} onChange={e => updateDelivery('pincode', e.target.value)}
-                      placeholder="834001"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-                  </div>
+                  {pincodeStatus && (
+                    <div className={`mt-1.5 flex items-center gap-1.5 text-xs ${
+                      pincodeStatus === 'checking'    ? 'text-gray-400' :
+                      pincodeStatus === 'available'   ? 'text-green-600' :
+                      pincodeStatus === 'limited'     ? 'text-yellow-600' : 'text-red-500'
+                    }`}>
+                      {pincodeStatus === 'checking'    && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {pincodeStatus === 'available'   && <CheckCircle className="w-3 h-3" />}
+                      {pincodeStatus === 'limited'     && <span>⚠️</span>}
+                      {pincodeStatus === 'unavailable' && <span>✕</span>}
+                      <span>{t(`req.pincode.${pincodeStatus}`)}</span>
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Delivery / Service Date <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.del.date')} <span className="text-red-400">*</span></label>
                   <input type="date" min={minDateStr} value={form.delivery.date} onChange={e => updateDelivery('date', e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Slot</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('req.del.slot')}</label>
                   <div className="flex gap-3">
                     {SLOTS.map(s => (
                       <button key={s.id} onClick={() => updateDelivery('slot', s.id)}
@@ -662,11 +934,56 @@ export default function RequestOrder() {
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${form.isUrgent ? 'text-red-700' : 'text-gray-700'}`}>
-                      Urgent Delivery (Aaj ya Kal)
+                      {t('req.del.urgent')}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Extra charges laag sakti hain — admin confirm karega</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('req.del.urgentSub')}</p>
                   </div>
                 </button>
+
+                {/* Budget */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.del.budget')}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">₹</span>
+                    <input type="number" min="0" value={form.budget}
+                      onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
+                      placeholder={t('req.del.budgetPh')}
+                      className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">{t('req.del.budgetNote')}</p>
+                </div>
+
+                {/* Photo upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.photo.label')}</label>
+                  <p className="text-xs text-gray-400 mb-3">{t('req.photo.sub')}</p>
+
+                  {photos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {photos.map(ph => (
+                        <div key={ph.id} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200">
+                          <img src={ph.preview} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(ph.id)}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {photos.length < 5 && (
+                    <label className="flex items-center gap-2 cursor-pointer w-fit">
+                      <span className="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 hover:border-orange-400 rounded-xl text-sm text-gray-500 hover:text-orange-500 transition-colors">
+                        <Plus className="w-4 h-4" />
+                        {t('req.photo.add')} ({photos.length}/5)
+                      </span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoAdd} />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -674,23 +991,23 @@ export default function RequestOrder() {
           {/* ── Step 4: Contact ── */}
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Contact Details</h2>
-              <p className="text-gray-500 text-sm mb-4">Quote is number pe milega</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">{t('req.s4.title')}</h2>
+              <p className="text-gray-500 text-sm mb-4">{t('req.s4.sub')}</p>
               {customer && (
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-700">
                   <User className="w-4 h-4 shrink-0" />
-                  <span>Logged in as <strong>{customer.name}</strong> — details pre-filled</span>
+                  <span>{t('req.con.loggedIn', { name: customer.name })}</span>
                 </div>
               )}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Aapka Naam <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.con.name')} <span className="text-red-400">*</span></label>
                   <input type="text" value={form.customer.name} onChange={e => updateCustomer('name', e.target.value)}
                     placeholder="Poora naam"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp / Phone <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.con.phone')} <span className="text-red-400">*</span></label>
                   <div className="flex">
                     <span className="inline-flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-gray-500 text-sm">+91</span>
                     <input type="tel" maxLength={10} value={form.customer.phone}
@@ -699,29 +1016,87 @@ export default function RequestOrder() {
                       className="flex-1 border border-gray-200 rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                   </div>
                   {form.customer.phone && !/^[6-9]\d{9}$/.test(form.customer.phone) && (
-                    <p className="text-red-400 text-xs mt-1">Valid 10-digit number daalo</p>
+                    <p className="text-red-400 text-xs mt-1">{t('req.phoneInvalid')}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.con.email')} <span className="text-gray-400 font-normal">({t('common.optional')})</span></label>
                   <input type="email" value={form.customer.email} onChange={e => updateCustomer('email', e.target.value)}
                     placeholder="email@example.com"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Extra Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.con.notes')} <span className="text-gray-400 font-normal">({t('common.optional')})</span></label>
                   <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                    placeholder="Koi special requirement hai toh batao..." rows={2}
+                    placeholder={t('req.con.notesPh')} rows={2}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+                </div>
+
+                {/* GST Invoice toggle */}
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, gstRequired: !f.gstRequired, gstin: f.gstRequired ? '' : f.gstin }))}
+                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                    form.gstRequired ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200 bg-white'
+                  }`}>
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                    form.gstRequired ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                  }`}>
+                    {form.gstRequired && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold ${form.gstRequired ? 'text-blue-700' : 'text-gray-700'}`}>{t('req.gst.toggle')}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('req.gst.sub')}</p>
+                  </div>
+                </button>
+
+                {form.gstRequired && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('req.gst.gstin')} <span className="text-red-400">*</span></label>
+                    <input type="text" maxLength={15} value={form.gstin}
+                      onChange={e => setForm(f => ({ ...f, gstin: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                      placeholder={t('req.gst.gstinPh')}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 font-mono tracking-wider" />
+                    {form.gstin && form.gstin.length > 0 && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(form.gstin) && (
+                      <p className="text-red-400 text-xs mt-1">{t('req.gst.invalid')}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment preference */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('req.pay.label')}</label>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'advance', key: 'req.pay.advance' },
+                      { id: 'cod',     key: 'req.pay.cod' },
+                      { id: 'credit',  key: 'req.pay.credit' },
+                    ].map(opt => (
+                      <button key={opt.id} type="button"
+                        onClick={() => setForm(f => ({ ...f, paymentPref: opt.id }))}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left text-sm transition-all ${
+                          form.paymentPref === opt.id
+                            ? 'border-orange-500 bg-orange-50 text-orange-700 font-medium'
+                            : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                        }`}>
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                          form.paymentPref === opt.id ? 'border-orange-500' : 'border-gray-300'
+                        }`}>
+                          {form.paymentPref === opt.id && <div className="w-2 h-2 rounded-full bg-orange-500" />}
+                        </div>
+                        {t(opt.key)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Summary */}
                 <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
-                  <p className="text-sm font-semibold text-gray-800 mb-2">Order Summary</p>
+                  <p className="text-sm font-semibold text-gray-800 mb-2">{t('req.con.summary')}</p>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <p><span className="text-gray-400">Category:</span> {selectedCat?.emoji} {selectedCat?.label}</p>
-                    <p><span className="text-gray-400">Items:</span> {form.items.map(it => `${it.name === 'Other' ? it.customName : it.name} (${it.quantity} ${it.unit})`).join(', ')}</p>
-                    <p><span className="text-gray-400">Delivery:</span> {form.delivery.city}, {form.delivery.date && new Date(form.delivery.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <p><span className="text-gray-400">{t('req.steps.category')}:</span> {selectedCat?.emoji} {selectedCat?.label}</p>
+                    <p><span className="text-gray-400">{t('req.steps.items')}:</span> {form.items.map(it => `${it.name === 'Other' ? it.customName : it.name} (${it.quantity} ${it.unit})`).join(', ')}</p>
+                    <p><span className="text-gray-400">{t('req.steps.delivery')}:</span> {form.delivery.city}, {form.delivery.date && new Date(form.delivery.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    {form.budget && <p><span className="text-gray-400">Budget:</span> ₹{Number(form.budget).toLocaleString('en-IN')}</p>}
                   </div>
                 </div>
               </div>
@@ -734,22 +1109,29 @@ export default function RequestOrder() {
           {step > 1 && (
             <button onClick={() => setStep(s => s - 1)}
               className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back
+              <ArrowLeft className="w-4 h-4" /> {t('common.back')}
             </button>
           )}
           {step < TOTAL_STEPS ? (
             <button onClick={() => setStep(s => s + 1)} disabled={!canNext()}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors">
-              Next <ArrowRight className="w-4 h-4" />
+              {t('common.next')} <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={!canNext() || loading}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors">
               {loading
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
-                : <><CheckCircle className="w-4 h-4" /> Submit Request</>}
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('req.submitting')}</>
+                : <><CheckCircle className="w-4 h-4" /> {t('req.submit')}</>}
             </button>
           )}
+        </div>
+
+        <div className="text-center mt-3">
+          <button onClick={saveDraft}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline-offset-2 hover:underline">
+            {t('req.draft.saveBtn')}
+          </button>
         </div>
       </div>
 

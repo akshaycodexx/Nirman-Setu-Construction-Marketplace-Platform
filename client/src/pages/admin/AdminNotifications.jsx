@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminLayout from '../../components/AdminLayout';
 import { MessageSquare, Mail, Phone, CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const CHANNEL_CONFIG = {
   whatsapp: { label: 'WhatsApp', icon: MessageSquare, color: 'bg-green-900 text-green-300', dot: 'bg-green-400' },
@@ -40,6 +41,7 @@ function formatTime(date) {
 }
 
 export default function AdminNotifications() {
+  const t = useT();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [channelFilter, setChannelFilter] = useState('');
@@ -84,21 +86,21 @@ export default function AdminNotifications() {
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Notification Log</h1>
+            <h1 className="text-xl font-bold text-white">{t('admin.nav.notifications')}</h1>
             <p className="text-gray-400 text-sm">WhatsApp · SMS · Email — sab channels ka record</p>
           </div>
           <button onClick={fetchLogs}
             className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl text-sm font-medium transition-colors">
-            <RefreshCw className="w-4 h-4" /> Refresh
+            <RefreshCw className="w-4 h-4" /> {t('admin.common.refresh')}
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { label: 'Total', value: total, color: 'text-white' },
-            { label: 'Sent', value: sentCount, color: 'text-green-400' },
-            { label: 'Failed', value: failedCount, color: 'text-red-400' },
+            { label: t('admin.labour.total'), value: total, color: 'text-white' },
+            { label: t('admin.notifications.sent'), value: sentCount, color: 'text-green-400' },
+            { label: t('admin.common.failed'), value: failedCount, color: 'text-red-400' },
             { label: 'WhatsApp', value: waCount, color: 'text-green-300' },
             { label: 'SMS', value: smsCount, color: 'text-blue-300' },
             { label: 'Email', value: emailCount, color: 'text-purple-300' },

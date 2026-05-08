@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { StatusBadge } from '../../components/AdminLayout';
 import { AlertTriangle, CheckCircle, Clock, ArrowRight, Loader2, X, MessageSquare } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 function ResolveModal({ order, onClose, onResolved }) {
   const [resolution, setResolution] = useState('');
@@ -70,6 +71,7 @@ const TABS = [
 ];
 
 export default function AdminComplaints() {
+  const t = useT();
   const [orders, setOrders] = useState([]);
   const [summary, setSummary] = useState({ open: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
@@ -106,16 +108,16 @@ export default function AdminComplaints() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <AlertTriangle className="w-6 h-6 text-orange-500" /> Complaints
+          <AlertTriangle className="w-6 h-6 text-orange-500" /> {t('admin.nav.complaints')}
         </h1>
-        <p className="text-gray-500 text-sm mt-0.5">Manage and resolve customer complaints</p>
+        <p className="text-gray-500 text-sm mt-0.5">{t('admin.complaints.sub')}</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Open Complaints</span>
+            <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">{t('admin.complaints.open')}</span>
             <Clock className="w-4 h-4 text-red-400" />
           </div>
           <p className="text-3xl font-black text-red-700">{summary.open}</p>
@@ -123,7 +125,7 @@ export default function AdminComplaints() {
         </div>
         <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Resolved</span>
+            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">{t('admin.complaints.resolved')}</span>
             <CheckCircle className="w-4 h-4 text-green-400" />
           </div>
           <p className="text-3xl font-black text-green-700">{summary.resolved}</p>

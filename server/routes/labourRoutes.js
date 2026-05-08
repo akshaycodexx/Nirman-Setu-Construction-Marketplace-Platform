@@ -3,7 +3,7 @@ const router = express.Router();
 const ctrl = require('../controllers/labourController');
 const customerAuth = require('../middleware/customerAuth');
 const { protectSupplier } = require('../middleware/supplierAuth');
-const { protect } = require('../middleware/adminAuth');
+const { protect } = require('../middleware/auth');
 
 // ─── CUSTOMER ────────────────────────────────────────────────────────────────
 router.post('/request', customerAuth, ctrl.createRequest);

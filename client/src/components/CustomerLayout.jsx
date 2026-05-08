@@ -2,17 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCustomer } from '../context/CustomerContext';
+import { useSocket } from '../context/SocketContext';
 import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, User, Settings, Bell, CheckCircle, IndianRupee, Package, AlertCircle, MessageSquare, Calculator, Hammer, FolderOpen } from 'lucide-react';
+import useT from '../i18n/useT';
 
-const navLinks = [
-  { to: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/customer/orders', icon: ClipboardList, label: 'My Orders' },
-  { to: '/customer/quotes', icon: MessageSquare, label: 'Quote Requests' },
-  { to: '/customer/labour', icon: Hammer, label: 'Karigar Booking' },
-  { to: '/customer/projects', icon: FolderOpen, label: 'My Projects' },
-  { to: '/customer/estimator', icon: Calculator, label: 'Material Estimator' },
-  { to: '/customer/notifications', icon: Bell, label: 'Notifications' },
-  { to: '/customer/profile', icon: Settings, label: 'Profile' },
+const NAV_KEYS = [
+  { to: '/customer/dashboard', icon: LayoutDashboard, key: 'cust.nav.dashboard' },
+  { to: '/customer/orders', icon: ClipboardList, key: 'cust.nav.orders' },
+  { to: '/customer/quotes', icon: MessageSquare, key: 'cust.nav.quotes' },
+  { to: '/customer/labour', icon: Hammer, key: 'cust.nav.labour' },
+  { to: '/customer/projects', icon: FolderOpen, key: 'cust.nav.projects' },
+  { to: '/customer/estimator', icon: Calculator, key: 'cust.nav.estimator' },
+  { to: '/customer/notifications', icon: Bell, key: 'cust.nav.notifications' },
+  { to: '/customer/profile', icon: Settings, key: 'cust.nav.profile' },
 ];
 
 const STATUS_COLORS = {
@@ -59,6 +61,9 @@ export default function CustomerLayout({ children }) {
   const { customer, logoutCustomer, authHeader } = useCustomer();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const t = useT();
+  const socketRef = useSocket();
+  const navLinks = NAV_KEYS.map(n => ({ ...n, label: t(n.key) }));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifs, setNotifs] = useState({ notifications: [], unread: 0 });
   const [notifOpen, setNotifOpen] = useState(false);
@@ -71,9 +76,15 @@ export default function CustomerLayout({ children }) {
         .then(r => setNotifs(r.data))
         .catch(() => {});
     fetchNotifs();
-    const id = setInterval(fetchNotifs, 60000);
-    return () => clearInterval(id);
-  }, [customer]);
+
+    const socket = socketRef?.current;
+    if (socket && customer._id) {
+      socket.emit('join:customer', customer._id);
+      const EVENTS = ['customer:order-updated', 'quote:submitted', 'quote:counter_response', 'labour:quote_submitted', 'labour:counter_response'];
+      EVENTS.forEach(ev => socket.on(ev, fetchNotifs));
+      return () => EVENTS.forEach(ev => socket.off(ev, fetchNotifs));
+    }
+  }, [customer, socketRef]);
 
   useEffect(() => {
     const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };

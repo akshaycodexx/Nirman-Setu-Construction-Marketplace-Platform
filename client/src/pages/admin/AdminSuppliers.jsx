@@ -3,6 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { Users, Plus, CheckCircle, XCircle, Clock, Search, X, Loader2, ToggleLeft, ToggleRight, Eye, Star, IndianRupee, TrendingUp, UserCheck, UserX } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const KYC_COLORS = {
   verified: 'bg-green-100 text-green-700',
@@ -267,6 +268,7 @@ function SupplierDetailModal({ supplierId, onClose }) {
 }
 
 export default function AdminSuppliers() {
+  const t = useT();
   const [suppliers, setSuppliers] = useState([]);
   const [pendingRegs, setPendingRegs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -354,15 +356,15 @@ export default function AdminSuppliers() {
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" /> Suppliers
+            <Users className="w-6 h-6 text-orange-500" /> {t('admin.nav.suppliers')}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">{suppliers.length} registered suppliers</p>
+          <p className="text-gray-500 text-sm mt-0.5">{t('admin.suppliers.registered', { n: suppliers.length })}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors"
         >
-          <Plus className="w-4 h-4" /> Add Supplier
+          <Plus className="w-4 h-4" /> {t('admin.suppliers.add')}
         </button>
       </div>
 
@@ -371,7 +373,7 @@ export default function AdminSuppliers() {
         <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden mb-5">
           <div className="px-5 py-4 border-b border-blue-100 bg-blue-50 flex items-center gap-2">
             <Clock className="w-4 h-4 text-blue-500" />
-            <h2 className="font-semibold text-blue-800">Pending Registrations ({pendingRegs.length})</h2>
+            <h2 className="font-semibold text-blue-800">{t('admin.suppliers.pendingRegs', { n: pendingRegs.length })}</h2>
             <span className="text-xs text-blue-500 ml-1">— Suppliers ne khud apply kiya, approval pending hai</span>
           </div>
           <div className="divide-y divide-gray-50">
@@ -437,7 +439,7 @@ export default function AdminSuppliers() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
-              placeholder="Search by name, phone, business name..."
+              placeholder={t('admin.suppliers.searchPh')}
               className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
@@ -446,13 +448,13 @@ export default function AdminSuppliers() {
             value={areaFilter}
             onChange={e => setAreaFilter(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
-            placeholder="Filter by area/city..."
+            placeholder={t('admin.suppliers.areaPh')}
             className="w-40 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
         </div>
         <div className="flex gap-2 items-center">
-          <span className="text-xs font-medium text-gray-500">Availability:</span>
-          {[['all', 'All'], ['true', 'Available'], ['false', 'Busy']].map(([val, label]) => (
+          <span className="text-xs font-medium text-gray-500">{t('admin.suppliers.availability')}:</span>
+          {[['all', t('admin.common.all')], ['true', t('admin.stock.availableNow')], ['false', t('admin.suppliers.busy')]].map(([val, label]) => (
             <button
               key={val}
               onClick={() => { setAvailFilter(val); fetchSuppliers({ q: search, area: areaFilter, avail: val }); }}
@@ -469,7 +471,7 @@ export default function AdminSuppliers() {
             onClick={() => fetchSuppliers({ q: search, area: areaFilter, avail: availFilter })}
             className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors"
           >
-            Search
+            {t('common.search')}
           </button>
         </div>
       </div>
@@ -480,7 +482,7 @@ export default function AdminSuppliers() {
         ) : suppliers.length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi supplier nahi mila</p>
+            <p>{t('admin.suppliers.empty')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">

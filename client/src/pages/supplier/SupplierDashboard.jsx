@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
+import { useSocket } from '../../context/SocketContext';
 import { Package, CheckCircle, Truck, ArrowRight, LayoutDashboard, ToggleLeft, ToggleRight, Star, IndianRupee, CalendarDays, AlertCircle, Clock } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const STATUS_COLORS = {
   confirmed: 'bg-indigo-100 text-indigo-700',
@@ -13,13 +15,15 @@ const STATUS_COLORS = {
 
 export default function SupplierDashboard() {
   const { supplier, getAuthHeaders } = useSupplier();
+  const socketRef = useSocket();
+  const t = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [available, setAvailable] = useState(supplier?.availability ?? true);
   const [upcoming, setUpcoming] = useState([]);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
     axios.get('/api/supplier/dashboard', { headers: getAuthHeaders() })
       .then(r => setData(r.data))
       .catch(() => {})
@@ -27,7 +31,20 @@ export default function SupplierDashboard() {
     axios.get('/api/supplier/upcoming', { headers: getAuthHeaders() })
       .then(r => setUpcoming(r.data.orders || []))
       .catch(() => {});
-  }, []);
+  };
+
+  useEffect(() => { fetchDashboard(); }, []);
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+    socket.on('supplier:new-order', fetchDashboard);
+    socket.on('order:updated', fetchDashboard);
+    return () => {
+      socket.off('supplier:new-order', fetchDashboard);
+      socket.off('order:updated', fetchDashboard);
+    };
+  }, [socketRef]);
 
   const toggleAvailability = async () => {
     setToggling(true);
@@ -42,10 +59,10 @@ export default function SupplierDashboard() {
   };
 
   const stats = [
-    { key: 'total', label: 'Total Orders', icon: Package, color: 'bg-gray-900 text-white' },
-    { key: 'confirmed', label: 'To Dispatch', icon: CheckCircle, color: 'bg-indigo-50 text-indigo-700' },
-    { key: 'dispatched', label: 'In Transit', icon: Truck, color: 'bg-orange-50 text-orange-700' },
-    { key: 'delivered', label: 'Delivered', icon: CheckCircle, color: 'bg-green-50 text-green-700' },
+    { key: 'total', label: t('suppdash.totalOrders'), icon: Package, color: 'bg-gray-900 text-white' },
+    { key: 'confirmed', label: t('suppdash.toDispatch'), icon: CheckCircle, color: 'bg-indigo-50 text-indigo-700' },
+    { key: 'dispatched', label: t('suppdash.inTransit'), icon: Truck, color: 'bg-orange-50 text-orange-700' },
+    { key: 'delivered', label: t('status.delivered'), icon: CheckCircle, color: 'bg-green-50 text-green-700' },
   ];
   const perf = data?.performance || {};
   const pendingAcceptance = data?.pendingAcceptance || 0;
@@ -58,7 +75,7 @@ export default function SupplierDashboard() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <LayoutDashboard className="w-6 h-6 text-emerald-500" /> Dashboard
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Welcome, {supplier?.name}</p>
+          <p className="text-gray-500 text-sm mt-0.5">{t('suppdash.welcome', { name: supplier?.name })}</p>
         </div>
 
         {/* Availability toggle */}
@@ -72,8 +89,8 @@ export default function SupplierDashboard() {
           }`}
         >
           {available
-            ? <><ToggleRight className="w-5 h-5" /> Available</>
-            : <><ToggleLeft className="w-5 h-5" /> Unavailable</>
+            ? <><ToggleRight className="w-5 h-5" /> {t('suppdash.available')}</>
+            : <><ToggleLeft className="w-5 h-5" /> {t('suppdash.unavailable')}</>
           }
         </button>
       </div>
@@ -84,7 +101,7 @@ export default function SupplierDashboard() {
           className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-4 hover:bg-amber-100 transition-colors">
           <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
           <span className="text-sm font-semibold text-amber-800">
-            {pendingAcceptance} order{pendingAcceptance > 1 ? 's' : ''} tumhara response chahta hai — accept ya decline karo
+            {t('suppdash.pendingAlert', { count: pendingAcceptance, s: pendingAcceptance > 1 ? 's' : '' })}
           </span>
           <ArrowRight className="w-4 h-4 text-amber-400 ml-auto shrink-0" />
         </Link>
@@ -96,7 +113,7 @@ export default function SupplierDashboard() {
           className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mb-4 hover:bg-green-100 transition-colors">
           <Clock className="w-4 h-4 text-green-600 shrink-0" />
           <span className="text-sm font-semibold text-green-800">
-            ₹{pendingPayout.total.toLocaleString('en-IN')} payout pending — {pendingPayout.count} order{pendingPayout.count > 1 ? 's' : ''} ka payment aana baki hai
+            {t('suppdash.payoutAlert', { amount: pendingPayout.total.toLocaleString('en-IN'), count: pendingPayout.count, s: pendingPayout.count > 1 ? 's' : '' })}
           </span>
           <ArrowRight className="w-4 h-4 text-green-500 ml-auto shrink-0" />
         </Link>
@@ -118,22 +135,22 @@ export default function SupplierDashboard() {
         <div className="rounded-2xl p-4 border border-yellow-100 bg-yellow-50">
           <div className="flex items-center gap-1.5 mb-2">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-            <span className="text-xs font-medium text-yellow-700">Avg Rating</span>
+            <span className="text-xs font-medium text-yellow-700">{t('suppdash.avgRating')}</span>
           </div>
           <p className="text-2xl font-black text-yellow-800">
             {loading ? '—' : perf.avgRating != null ? `${perf.avgRating}/5` : 'N/A'}
           </p>
-          <p className="text-xs text-yellow-600 mt-0.5">{loading ? '' : perf.ratingCount ? `${perf.ratingCount} review${perf.ratingCount !== 1 ? 's' : ''}` : 'No reviews yet'}</p>
+          <p className="text-xs text-yellow-600 mt-0.5">{loading ? '' : perf.ratingCount ? t('suppdash.reviews', { count: perf.ratingCount, s: perf.ratingCount !== 1 ? 's' : '' }) : t('suppdash.noReviews')}</p>
         </div>
         <div className="rounded-2xl p-4 border border-green-100 bg-green-50">
           <div className="flex items-center gap-1.5 mb-2">
             <IndianRupee className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-700">Total Earnings</span>
+            <span className="text-xs font-medium text-green-700">{t('suppdash.totalEarnings')}</span>
           </div>
           <p className="text-2xl font-black text-green-800">
             {loading ? '—' : perf.earnings ? `₹${perf.earnings.toLocaleString('en-IN')}` : '₹0'}
           </p>
-          <p className="text-xs text-green-600 mt-0.5">Paid payouts</p>
+          <p className="text-xs text-green-600 mt-0.5">{t('suppdash.paidPayouts')}</p>
         </div>
       </div>
 
@@ -142,7 +159,7 @@ export default function SupplierDashboard() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
             <CalendarDays className="w-4 h-4 text-emerald-500" />
-            <h2 className="font-semibold text-gray-900">Upcoming Deliveries</h2>
+            <h2 className="font-semibold text-gray-900">{t('suppdash.upcoming')}</h2>
             <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{upcoming.length}</span>
           </div>
           <div className="divide-y divide-gray-50">
@@ -151,7 +168,7 @@ export default function SupplierDashboard() {
               const today = new Date();
               today.setHours(0,0,0,0);
               const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-              const urgency = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `${diff}d left`;
+              const urgency = diff === 0 ? t('suppdash.today') : diff === 1 ? t('suppdash.tomorrow') : t('suppdash.daysLeft', { n: diff });
               const urgencyColor = diff <= 1 ? 'text-red-600 bg-red-50' : diff <= 3 ? 'text-orange-600 bg-orange-50' : 'text-gray-500 bg-gray-50';
               return (
                 <Link key={order._id} to={`/supplier/orders/${order.orderId}`}
@@ -180,9 +197,9 @@ export default function SupplierDashboard() {
       {/* Recent orders */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Recent Orders</h2>
+          <h2 className="font-semibold text-gray-900">{t('suppdash.recentOrders')}</h2>
           <Link to="/supplier/orders" className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-medium">
-            All Orders <ArrowRight className="w-3.5 h-3.5" />
+            {t('suppdash.allOrders')} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
@@ -191,7 +208,7 @@ export default function SupplierDashboard() {
         ) : !data?.recent?.length ? (
           <div className="py-12 text-center text-gray-400">
             <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi order assign nahi hua abhi</p>
+            <p>{t('suppdash.noOrders')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">

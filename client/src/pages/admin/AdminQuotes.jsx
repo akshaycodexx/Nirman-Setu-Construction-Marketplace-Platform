@@ -3,6 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { MessageSquare, ChevronDown, ChevronUp, Clock, CheckCircle, Ban, Loader2, RefreshCw, Filter } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const STATUS_STYLE = {
   open:      'bg-green-100 text-green-700',
@@ -103,6 +104,7 @@ function RequestRow({ request }) {
 }
 
 export default function AdminQuotes() {
+  const t = useT();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -124,7 +126,7 @@ export default function AdminQuotes() {
         setPages(r.data.pages || 1);
         setPage(p);
       })
-      .catch(() => toast.error('Load nahi ho saka'))
+      .catch(() => toast.error(t('admin.common.loadFailed')))
       .finally(() => setLoading(false));
   };
 
@@ -147,22 +149,22 @@ export default function AdminQuotes() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Quote Requests</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Customer material requests aur supplier quotes</p>
+            <h1 className="text-xl font-bold text-gray-900">{t('admin.nav.quotes')}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{t('admin.quotes.sub')}</p>
           </div>
           <button onClick={() => load(1)}
             className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 bg-white border border-gray-200 px-3 py-2 rounded-xl transition-colors">
-            <RefreshCw className="w-4 h-4" /> Refresh
+            <RefreshCw className="w-4 h-4" /> {t('admin.common.refresh')}
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Requests', value: total, color: 'text-gray-900' },
-            { label: 'Open', value: openCount, color: 'text-green-600' },
-            { label: 'Accepted', value: acceptedCount, color: 'text-blue-600' },
-            { label: 'Quotes Submitted', value: totalQuotes, color: 'text-orange-600' },
+            { label: t('admin.quotes.totalRequests'), value: total, color: 'text-gray-900' },
+            { label: t('admin.quotes.open'), value: openCount, color: 'text-green-600' },
+            { label: t('admin.quotes.accepted'), value: acceptedCount, color: 'text-blue-600' },
+            { label: t('admin.quotes.submitted'), value: totalQuotes, color: 'text-orange-600' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-4">
               <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
@@ -193,7 +195,7 @@ export default function AdminQuotes() {
         ) : requests.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-2xl border border-gray-100">
             <MessageSquare className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Koi quote request nahi mila</p>
+            <p className="text-gray-500 font-medium">{t('admin.quotes.empty')}</p>
           </div>
         ) : (
           <div className="space-y-2">

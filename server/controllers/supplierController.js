@@ -148,8 +148,10 @@ const updateOrderStatus = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: order.status });
-      io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+      const payload = { orderId: order.orderId, status: order.status };
+      io.to(`order:${order.orderId}`).emit('order:updated', payload);
+      io.to('admin').emit('order:updated', payload);
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', payload);
     }
 
     res.json({ success: true, order });
@@ -320,7 +322,11 @@ const acceptOrder = async (req, res) => {
     if (!order) return res.status(404).json({ success: false, message: 'Order not found or already responded' });
 
     const io = req.app.get('io');
-    if (io) io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+    if (io) {
+      const payload = { orderId: order.orderId, status: order.status };
+      io.to('admin').emit('order:updated', payload);
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', payload);
+    }
 
     res.json({ success: true, order });
   } catch (err) {
@@ -343,7 +349,10 @@ const declineOrder = async (req, res) => {
     if (!order) return res.status(404).json({ success: false, message: 'Order not found or already responded' });
 
     const io = req.app.get('io');
-    if (io) io.to('admin').emit('order:updated', { orderId: order.orderId, status: 'pending' });
+    if (io) {
+      io.to('admin').emit('order:updated', { orderId: order.orderId, status: 'pending' });
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', { orderId: order.orderId, status: 'pending' });
+    }
 
     res.json({ success: true, order });
   } catch (err) {

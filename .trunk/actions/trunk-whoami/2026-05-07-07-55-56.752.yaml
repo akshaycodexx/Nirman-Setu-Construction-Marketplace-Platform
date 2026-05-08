@@ -1,0 +1,15 @@
+action_id: trunk-whoami
+date: 2026-05-07 07:55:56
+run: trunk whoami
+run_from: ""
+trigger: schedule 24h+1h
+result:
+  exit_code: 1
+  out: ""
+  err: Exception occurred while executing 'trunk-whoami'. See .trunk\out\u1uRw.yaml for details.
+  error_path: C:\Users\AKSHAY\Desktop\Nirman Setu\.trunk\out\u1uRw.yaml
+timestamp: 1778140556
+full_timestamp:
+  nanos: 752139000
+  seconds: 1778140556
+trunk_version: 1.25.0

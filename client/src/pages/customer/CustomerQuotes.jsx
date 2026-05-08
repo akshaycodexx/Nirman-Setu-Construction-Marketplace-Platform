@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
+import { useSocket } from '../../context/SocketContext';
 import CustomerLayout from '../../components/CustomerLayout';
 import {
   Plus, X, ChevronDown, ChevronUp, CheckCircle, Clock, Ban,
   MessageSquare, IndianRupee, Package, Loader2, ArrowRight,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import useT from '../../i18n/useT';
 
 const UNITS = ['ton', 'bag', 'piece', 'truck', 'cubic_meter', 'kg', 'litre', 'sqft'];
 const UNIT_LABEL = { ton: 'Ton', bag: 'Bag', piece: 'Piece', truck: 'Truck', cubic_meter: 'Cubic Meter', kg: 'KG', litre: 'Litre', sqft: 'Sq.Ft' };
@@ -29,6 +31,7 @@ const QUOTE_STATUS_STYLE = {
 
 function RequestForm({ onCreated, onClose, prefill }) {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [form, setForm] = useState({
     material: prefill?.material || '',
     quantity: prefill?.quantity || '',
@@ -48,10 +51,10 @@ function RequestForm({ onCreated, onClose, prefill }) {
         quantity: Number(form.quantity),
         budget: form.budget ? Number(form.budget) : undefined,
       }, { headers: authHeader() });
-      toast.success('Request bhej di gai!');
+      toast.success(t('custquotes.sent'));
       onCreated(data.request);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error aaya');
+      toast.error(err.response?.data?.message || t('custquotes.loadFail'));
     } finally {
       setSaving(false);
     }
@@ -61,71 +64,71 @@ function RequestForm({ onCreated, onClose, prefill }) {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900">Naya Quote Request</h2>
+          <h2 className="font-bold text-gray-900">{t('custquotes.form.title')}</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Material *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.material')}</label>
               <input value={form.material} onChange={e => set('material', e.target.value)}
-                placeholder="Gitti, Cement, Bricks..." required
+                placeholder={t('custquotes.form.materialPh')} required
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Quantity *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.qty')}</label>
               <input value={form.quantity} onChange={e => set('quantity', e.target.value)}
                 type="number" min="1" required placeholder="10"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Unit *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.unit')}</label>
               <select value={form.unit} onChange={e => set('unit', e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {UNITS.map(u => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">City *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.city')}</label>
               <input value={form.city} onChange={e => set('city', e.target.value)}
                 placeholder="Patna" required
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Pincode</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.pin')}</label>
               <input value={form.pincode} onChange={e => set('pincode', e.target.value)}
                 placeholder="800001"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Delivery Address *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.addr')}</label>
               <input value={form.address} onChange={e => set('address', e.target.value)}
-                placeholder="Plot no, mohalla, landmark..." required
+                placeholder={t('custquotes.form.addrPh')} required
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Chahiye Date *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.date')}</label>
               <input value={form.requiredBy} onChange={e => set('requiredBy', e.target.value)}
                 type="date" required min={new Date().toISOString().split('T')[0]}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Budget (₹, optional)</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.budget')}</label>
               <input value={form.budget} onChange={e => set('budget', e.target.value)}
                 type="number" min="0" placeholder="50000"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Extra Details (optional)</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.form.desc')}</label>
               <textarea value={form.description} onChange={e => set('description', e.target.value)}
-                rows={2} placeholder="Grade, quality requirement..."
+                rows={2} placeholder={t('custquotes.form.descPh')}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
             </div>
           </div>
           <button type="submit" disabled={saving}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Request Bhejo
+            {t('custquotes.form.submit')}
           </button>
         </form>
       </div>
@@ -135,19 +138,20 @@ function RequestForm({ onCreated, onClose, prefill }) {
 
 function CounterModal({ quote, request, onDone, onClose }) {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [price, setPrice] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
-    if (!price || Number(price) <= 0) return toast.error('Valid price daalo');
+    if (!price || Number(price) <= 0) return toast.error(t('custquotes.validPrice'));
     setSaving(true);
     try {
       await axios.post(`/api/quotes/${quote.quoteId}/counter`, { price: Number(price), note }, { headers: authHeader() });
-      toast.success('Counter bhej diya!');
+      toast.success(t('custquotes.counterSent'));
       onDone();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || t('custquotes.loadFail'));
     } finally {
       setSaving(false);
     }
@@ -157,28 +161,28 @@ function CounterModal({ quote, request, onDone, onClose }) {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-gray-900">Counter Offer</h3>
+          <h3 className="font-bold text-gray-900">{t('custquotes.counter.title')}</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <p className="text-sm text-gray-500">
-          {quote.supplierName} ka quote: <strong>₹{quote.currentPrice?.toLocaleString('en-IN')}</strong>
+          {t('custquotes.counter.supplierQuote', { name: quote.supplierName, price: quote.currentPrice?.toLocaleString('en-IN') })}
         </p>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Aapka Price (₹)</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.counter.yourPrice')}</label>
           <input value={price} onChange={e => setPrice(e.target.value)} type="number" min="1"
-            placeholder="Apna price daalo"
+            placeholder={t('custquotes.counter.pricePh')}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Note (optional)</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custquotes.counter.note')}</label>
           <input value={note} onChange={e => setNote(e.target.value)}
-            placeholder="Reason batao..."
+            placeholder={t('custquotes.counter.notePh')}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <button onClick={submit} disabled={saving}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-          Counter Bhejo
+          {t('custquotes.counter.send')}
         </button>
       </div>
     </div>
@@ -187,17 +191,18 @@ function CounterModal({ quote, request, onDone, onClose }) {
 
 function QuoteCard({ quote, request, onRefresh }) {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [counterOpen, setCounterOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
 
   const accept = async () => {
     setAccepting(true);
     try {
-      const { data } = await axios.post(`/api/quotes/${quote.quoteId}/accept`, {}, { headers: authHeader() });
-      toast.success('Quote accept ho gaya! Order ban gaya.');
+      await axios.post(`/api/quotes/${quote.quoteId}/accept`, {}, { headers: authHeader() });
+      toast.success(t('custquotes.accepted'));
       onRefresh();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || t('custquotes.loadFail'));
     } finally {
       setAccepting(false);
     }
@@ -220,27 +225,27 @@ function QuoteCard({ quote, request, onRefresh }) {
               <p className="font-semibold text-gray-900 text-sm">{quote.supplierName}</p>
               {quote.verifiedBadge && (
                 <span className="inline-flex items-center gap-0.5 bg-blue-100 text-blue-700 text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                  <CheckCircle className="w-3 h-3" /> Verified
+                  <CheckCircle className="w-3 h-3" /> {t('custquotes.verified')}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">{quote.deliveryDays} din mein delivery</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t('custquotes.delivDays', { n: quote.deliveryDays })}</p>
           </div>
           <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${QUOTE_STATUS_STYLE[quote.status] || 'bg-gray-100 text-gray-500'}`}>
-            {quote.status === 'countered' ? 'Counter Chal Raha' : quote.status}
+            {quote.status === 'countered' ? t('custquotes.counterChal') : quote.status}
           </span>
         </div>
 
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-black text-gray-900">₹{quote.currentPrice?.toLocaleString('en-IN')}</span>
-          <span className="text-xs text-gray-400">total</span>
+          <span className="text-xs text-gray-400">{t('custquotes.totalLabel')}</span>
         </div>
 
         {quote.notes && <p className="text-xs text-gray-500 italic">{quote.notes}</p>}
 
         {quote.negotiation?.length > 1 && (
           <div className="bg-gray-50 rounded-lg p-2.5 space-y-1.5">
-            <p className="text-xs font-medium text-gray-500">Negotiation History</p>
+            <p className="text-xs font-medium text-gray-500">{t('custquotes.negHistory')}</p>
             {quote.negotiation.map((n, i) => (
               <div key={i} className={`flex items-center gap-2 text-xs ${n.by === 'customer' ? 'text-blue-700' : 'text-gray-600'}`}>
                 <span className="font-semibold capitalize">{n.by}:</span>
@@ -254,7 +259,7 @@ function QuoteCard({ quote, request, onRefresh }) {
         {quote.status === 'accepted' && request.convertedOrderId && (
           <Link to={`/customer/orders/${request.convertedOrderId}`}
             className="flex items-center gap-1.5 text-blue-600 text-xs font-semibold hover:text-blue-700">
-            Order dekho: {request.convertedOrderId} <ArrowRight className="w-3 h-3" />
+            {t('custquotes.orderDekho')} {request.convertedOrderId} <ArrowRight className="w-3 h-3" />
           </Link>
         )}
 
@@ -262,12 +267,12 @@ function QuoteCard({ quote, request, onRefresh }) {
           <div className="flex gap-2 pt-1">
             <button onClick={() => setCounterOpen(true)}
               className="flex-1 flex items-center justify-center gap-1.5 border border-orange-300 text-orange-600 hover:bg-orange-50 font-semibold py-2 rounded-xl text-xs transition-colors">
-              <MessageSquare className="w-3.5 h-3.5" /> Counter Karo
+              <MessageSquare className="w-3.5 h-3.5" /> {t('custquotes.counterKaro')}
             </button>
             <button onClick={accept} disabled={accepting}
               className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-xl text-xs transition-colors">
               {accepting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-              Accept Karo
+              {t('custquotes.acceptKaro')}
             </button>
           </div>
         )}
@@ -278,6 +283,7 @@ function QuoteCard({ quote, request, onRefresh }) {
 
 function RequestCard({ request, onRefresh }) {
   const { authHeader } = useCustomer();
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -285,10 +291,10 @@ function RequestCard({ request, onRefresh }) {
     setCancelling(true);
     try {
       await axios.put(`/api/quotes/requests/${request.requestId}/cancel`, {}, { headers: authHeader() });
-      toast.success('Request cancel ho gayi');
+      toast.success(t('custquotes.reqCancelled'));
       onRefresh();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || t('custquotes.loadFail'));
     } finally {
       setCancelling(false);
     }
@@ -309,17 +315,17 @@ function RequestCard({ request, onRefresh }) {
             </span>
             {hasNewQuote && (
               <span className="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full animate-pulse">
-                New Quote!
+                {t('custquotes.newQuote')}
               </span>
             )}
           </div>
           <p className="text-sm text-gray-500">
             {request.quantity} {UNIT_LABEL[request.unit]} · {request.city}
-            {request.budget && ` · Budget: ₹${request.budget.toLocaleString('en-IN')}`}
+            {request.budget && ` · ${t('custquotes.budgetLabel', { amount: request.budget.toLocaleString('en-IN') })}`}
           </p>
           <p className="text-xs text-gray-400">
-            Chahiye: {new Date(request.requiredBy).toLocaleDateString('en-IN')}
-            {quoteCount > 0 && <span className="ml-2 text-blue-500 font-semibold">{quoteCount} quote{quoteCount !== 1 ? 's' : ''} mili</span>}
+            {t('custquotes.chahiye')} {new Date(request.requiredBy).toLocaleDateString('en-IN')}
+            {quoteCount > 0 && <span className="ml-2 text-blue-500 font-semibold">{t('custquotes.quoteCount', { n: quoteCount, s: quoteCount !== 1 ? 's' : '' })}</span>}
           </p>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-1" />}
@@ -328,7 +334,7 @@ function RequestCard({ request, onRefresh }) {
       {expanded && (
         <div className="px-5 pb-5 space-y-3 border-t border-gray-50">
           <p className="text-xs text-gray-400 pt-3">
-            Request ID: <span className="font-mono font-semibold text-gray-600">{request.requestId}</span>
+            {t('custquotes.reqId')} <span className="font-mono font-semibold text-gray-600">{request.requestId}</span>
             {' · '}{request.address}
           </p>
 
@@ -339,11 +345,11 @@ function RequestCard({ request, onRefresh }) {
           {quoteCount === 0 ? (
             <div className="py-6 text-center">
               <Clock className="w-7 h-7 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Abhi koi quote nahi aayi. Suppliers notify ho gaye hain.</p>
+              <p className="text-sm text-gray-400">{t('custquotes.noQuoteYet')}</p>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quotes Received</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('custquotes.quotesReceived')}</p>
               {request.quotes.map(q => (
                 <QuoteCard key={q.quoteId} quote={q} request={request} onRefresh={onRefresh} />
               ))}
@@ -354,7 +360,7 @@ function RequestCard({ request, onRefresh }) {
             <button onClick={cancel} disabled={cancelling}
               className="flex items-center gap-1.5 text-red-500 hover:text-red-600 text-xs font-semibold mt-2">
               {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-              Request Cancel Karo
+              {t('custquotes.cancelReq')}
             </button>
           )}
         </div>
@@ -365,6 +371,8 @@ function RequestCard({ request, onRefresh }) {
 
 export default function CustomerQuotes() {
   const { authHeader } = useCustomer();
+  const socketRef = useSocket();
+  const t = useT();
   const location = useLocation();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -375,11 +383,19 @@ export default function CustomerQuotes() {
     setLoading(true);
     axios.get('/api/quotes/my-requests', { headers: authHeader() })
       .then(r => setRequests(r.data.requests || []))
-      .catch(() => toast.error('Load nahi ho saka'))
+      .catch(() => toast.error(t('custquotes.loadFail')))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+    const EVENTS = ['quote:submitted', 'quote:counter_response'];
+    EVENTS.forEach(ev => socket.on(ev, load));
+    return () => EVENTS.forEach(ev => socket.off(ev, load));
+  }, [socketRef]);
 
   const handleCreated = (req) => {
     setFormOpen(false);
@@ -395,11 +411,11 @@ export default function CustomerQuotes() {
 
         {/* Header */}
         <div className="bg-linear-to-r from-orange-500 to-amber-500 rounded-2xl p-5 text-white">
-          <h1 className="text-xl font-bold">Material Quote Requests</h1>
-          <p className="text-orange-100 text-sm mt-0.5">Suppliers se price compare karo — bina phone kiye.</p>
+          <h1 className="text-xl font-bold">{t('custquotes.title')}</h1>
+          <p className="text-orange-100 text-sm mt-0.5">{t('custquotes.sub')}</p>
           <button onClick={() => setFormOpen(true)}
             className="mt-3 inline-flex items-center gap-2 bg-white text-orange-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-orange-50 transition-colors">
-            <Plus className="w-4 h-4" /> Naya Request
+            <Plus className="w-4 h-4" /> {t('custquotes.newReq')}
           </button>
         </div>
 
@@ -408,15 +424,15 @@ export default function CustomerQuotes() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
               <p className="text-2xl font-black text-gray-900">{requests.length}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Total Requests</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t('custquotes.totalReq')}</p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
               <p className="text-2xl font-black text-green-600">{openCount}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Open</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t('custquotes.open')}</p>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
               <p className="text-2xl font-black text-blue-600">{requests.reduce((s, r) => s + (r.quotes?.length || 0), 0)}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Quotes Mili</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t('custquotes.received')}</p>
             </div>
           </div>
         )}
@@ -429,11 +445,11 @@ export default function CustomerQuotes() {
         ) : requests.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-2xl border border-gray-100">
             <Package className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Koi request nahi hai abhi</p>
-            <p className="text-gray-400 text-sm mt-1">Pehla request banao — suppliers quotes denge</p>
+            <p className="text-gray-500 font-medium">{t('custquotes.noReq')}</p>
+            <p className="text-gray-400 text-sm mt-1">{t('custquotes.noReqSub')}</p>
             <button onClick={() => setFormOpen(true)}
               className="mt-4 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">
-              <Plus className="w-4 h-4" /> Request Banao
+              <Plus className="w-4 h-4" /> {t('custquotes.reqBanao')}
             </button>
           </div>
         ) : (

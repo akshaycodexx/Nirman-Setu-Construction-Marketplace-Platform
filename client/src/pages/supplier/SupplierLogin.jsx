@@ -4,10 +4,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useSupplier } from '../../context/SupplierContext';
 import { HardHat, Eye, EyeOff, Loader2 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 export default function SupplierLogin() {
   const { loginSupplier } = useSupplier();
   const navigate = useNavigate();
+  const t = useT();
   const [form, setForm] = useState({ phone: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,13 +36,13 @@ export default function SupplierLogin() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500 rounded-2xl mb-4">
             <HardHat className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Supplier Login</h1>
-          <p className="text-gray-400 text-sm mt-1">Nirman Setu — Supplier Panel</p>
+          <h1 className="text-2xl font-bold text-white">{t('auth.supp.login.title')}</h1>
+          <p className="text-gray-400 text-sm mt-1">{t('auth.supp.login.sub')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-gray-800 rounded-2xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.phone')}</label>
             <div className="flex">
               <span className="inline-flex items-center px-3 bg-gray-700 border border-r-0 border-gray-600 rounded-l-xl text-gray-400 text-sm">+91</span>
               <input
@@ -56,7 +58,7 @@ export default function SupplierLogin() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t('auth.password')}</label>
             <div className="relative">
               <input
                 type={showPass ? 'text' : 'password'}
@@ -77,13 +79,11 @@ export default function SupplierLogin() {
             disabled={loading}
             className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
           >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Logging in...</> : 'Login'}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('auth.loggingIn')}</> : t('auth.loginBtn')}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 text-sm mt-4">
-          Account nahi hai? Admin se contact karo.
-        </p>
+        <p className="text-center text-gray-600 text-sm mt-4">{t('auth.suppNoAccount')}</p>
       </div>
     </div>
   );

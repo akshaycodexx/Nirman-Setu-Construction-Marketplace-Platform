@@ -9,6 +9,7 @@ import {
   Send, RefreshCw, Loader2, CheckCircle, AlertCircle, UserCheck, CreditCard, Receipt,
   Star, IndianRupee, Wallet, Flag, ShieldAlert, Navigation, Zap, BadgeIndianRupee, X, Boxes
 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const adminAuthHeader = () => {
   const token = localStorage.getItem('adminToken');
@@ -27,6 +28,7 @@ const STATUSES = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered', '
 export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const t = useT();
   const [order, setOrder] = useState(null);
   const [nearbySuppliers, setNearbySuppliers] = useState([]);
   const [customerInfo, setCustomerInfo] = useState(null);
@@ -78,12 +80,12 @@ export default function AdminOrderDetail() {
       setOrder(data.order);
       setNewStatus('confirmed');
       setFeeWarning(null);
-      toast.success('Supplier assigned & order confirmed!');
+      toast.success(t('admin.orderDetail.assigned'));
     } catch (err) {
       if (err.response?.status === 402 && err.response?.data?.blocked) {
         setFeeWarning(err.response.data);
       } else {
-        toast.error(err.response?.data?.message || 'Assignment failed');
+        toast.error(err.response?.data?.message || t('admin.orderDetail.assignFailed'));
       }
     }
     setAssigning(false);
@@ -105,14 +107,14 @@ export default function AdminOrderDetail() {
       const { data } = await axios.get(`/api/stock/admin/search?${params}`, { headers: adminAuthHeader() });
       setStockResults(data.results || []);
     } catch {
-      toast.error('Stock check failed');
+      toast.error(t('admin.orderDetail.stockFailed'));
     } finally {
       setStockLoading(false);
     }
   };
 
   const handleCreateFee = async () => {
-    if (!feeAmount) { toast.error('Amount daalo'); return; }
+    if (!feeAmount) { toast.error(t('admin.orderDetail.amountRequired')); return; }
     setSavingFee(true);
     try {
       const { data } = await axios.post('/api/admin/fees', {
@@ -123,9 +125,9 @@ export default function AdminOrderDetail() {
       });
       setPlatformFee(data.fee);
       setFeeAmount(''); setFeeNote('');
-      toast.success('Platform fee set ho gaya!');
+      toast.success(t('admin.orderDetail.feeSet'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Fee set failed');
+      toast.error(err.response?.data?.message || t('admin.orderDetail.feeFailed'));
     }
     setSavingFee(false);
   };
@@ -134,9 +136,9 @@ export default function AdminOrderDetail() {
     try {
       const { data } = await axios.patch(`/api/admin/fees/${platformFee._id}/status`, { status, waivedReason });
       setPlatformFee(data.fee);
-      toast.success(status === 'paid' ? 'Fee mark paid!' : 'Fee waived!');
+      toast.success(status === 'paid' ? t('admin.fees.paidMarked') : t('admin.fees.waived'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
+      toast.error(err.response?.data?.message || t('admin.orderDetail.updateFailed'));
     }
   };
 
@@ -153,7 +155,7 @@ export default function AdminOrderDetail() {
           setQuoteBreakdown(r.data.order.quote.breakdown || '');
         }
       })
-      .catch(() => toast.error('Order nahi mila'))
+      .catch(() => toast.error(t('admin.orderDetail.notFound')))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -165,16 +167,16 @@ export default function AdminOrderDetail() {
         adminNote,
       });
       setOrder(data.order);
-      toast.success('Status updated!');
+      toast.success(t('admin.orderDetail.statusUpdated'));
     } catch {
-      toast.error('Update failed');
+      toast.error(t('admin.orderDetail.updateFailed'));
     }
     setSaving(false);
   };
 
   const handleSendQuote = async () => {
     if (!quoteAmount || !quoteBreakdown) {
-      toast.error('Amount aur breakdown dono zaroori hain');
+      toast.error(t('admin.orderDetail.quoteRequired'));
       return;
     }
     setSendingQuote(true);
@@ -185,9 +187,9 @@ export default function AdminOrderDetail() {
         adminNote,
       });
       setOrder(data.order);
-      toast.success('Quote sent!');
+      toast.success(t('admin.orderDetail.quoteSent'));
     } catch {
-      toast.error('Quote send failed');
+      toast.error(t('admin.orderDetail.quoteFailed'));
     }
     setSendingQuote(false);
   };
@@ -196,7 +198,7 @@ export default function AdminOrderDetail() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64 gap-3 text-gray-400">
-          <Loader2 className="w-5 h-5 animate-spin" /> Loading...
+          <Loader2 className="w-5 h-5 animate-spin" /> {t('common.loading')}
         </div>
       </AdminLayout>
     );
@@ -207,7 +209,7 @@ export default function AdminOrderDetail() {
       <AdminLayout>
         <div className="text-center py-16 text-gray-400">
           <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p>Order nahi mila</p>
+          <p>{t('admin.orderDetail.notFound')}</p>
         </div>
       </AdminLayout>
     );

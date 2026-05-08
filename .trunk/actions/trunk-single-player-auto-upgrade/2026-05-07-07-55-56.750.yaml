@@ -1,0 +1,15 @@
+action_id: trunk-single-player-auto-upgrade
+date: 2026-05-07 07:55:56
+run: trunk upgrade cli --single-player-only -n --no-progress --on-upgrade=false --allow-daemon-start=false
+run_from: ""
+trigger: schedule 24h+1h
+result:
+  exit_code: 1
+  out: ""
+  err: Exception occurred while executing 'trunk-single-player-auto-upgrade'. See .trunk\out\eT9Wp.yaml for details.
+  error_path: C:\Users\AKSHAY\Desktop\Nirman Setu\.trunk\out\eT9Wp.yaml
+timestamp: 1778140556
+full_timestamp:
+  nanos: 750170000
+  seconds: 1778140556
+trunk_version: 1.25.0

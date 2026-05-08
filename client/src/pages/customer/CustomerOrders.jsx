@@ -2,30 +2,47 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCustomer } from '../../context/CustomerContext';
+import { useSocket } from '../../context/SocketContext';
 import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/CustomerLayout';
 import { ClipboardList, ChevronRight, Flag } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'quoted', label: 'Quoted' },
-  { key: 'confirmed', label: 'Confirmed' },
-  { key: 'dispatched', label: 'Dispatched' },
-  { key: 'delivered', label: 'Delivered' },
-  { key: 'cancelled', label: 'Cancelled' },
+const TAB_KEYS = [
+  { key: 'all', labelKey: 'custorders.tab.all' },
+  { key: 'pending', labelKey: 'status.pending' },
+  { key: 'quoted', labelKey: 'status.quoted' },
+  { key: 'confirmed', labelKey: 'status.confirmed' },
+  { key: 'dispatched', labelKey: 'status.dispatched' },
+  { key: 'delivered', labelKey: 'status.delivered' },
+  { key: 'cancelled', labelKey: 'status.cancelled' },
 ];
 
 export default function CustomerOrders() {
   const { authHeader } = useCustomer();
+  const socketRef = useSocket();
+  const t = useT();
+  const TABS = TAB_KEYS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
 
-  useEffect(() => {
+  const fetchOrders = () =>
     axios.get('/api/customer/orders', { headers: authHeader() })
       .then(r => setOrders(r.data))
       .finally(() => setLoading(false));
-  }, []);
+
+  useEffect(() => { fetchOrders(); }, []);
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+    socket.on('customer:order-updated', fetchOrders);
+    socket.on('quote:submitted', fetchOrders);
+    return () => {
+      socket.off('customer:order-updated', fetchOrders);
+      socket.off('quote:submitted', fetchOrders);
+    };
+  }, [socketRef]);
 
   const filtered = tab === 'all' ? orders : orders.filter(o => o.status === tab);
 
@@ -33,9 +50,9 @@ export default function CustomerOrders() {
     <CustomerLayout>
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">My Orders</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t('custorders.title')}</h1>
           <Link to="/request" className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-            + New Order
+            {t('custorders.newOrder')}
           </Link>
         </div>
 
@@ -57,13 +74,13 @@ export default function CustomerOrders() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-gray-400 text-sm">Loading...</div>
+          <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-gray-400 text-sm">{t('common.loading')}</div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
             <ClipboardList className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500">{tab === 'all' ? 'No orders yet.' : `No ${tab} orders.`}</p>
+            <p className="text-gray-500">{tab === 'all' ? t('custorders.noOrders') : t('custorders.noTabOrders', { tab })}</p>
             {tab === 'all' && (
-              <Link to="/request" className="text-blue-500 text-sm font-medium mt-1 block">Place your first order →</Link>
+              <Link to="/request" className="text-blue-500 text-sm font-medium mt-1 block">{t('custorders.firstOrder')}</Link>
             )}
           </div>
         ) : (

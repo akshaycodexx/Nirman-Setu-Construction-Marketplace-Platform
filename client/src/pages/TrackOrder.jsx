@@ -5,13 +5,14 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { Search, Package, CheckCircle, Truck, Clock, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import useT from '../i18n/useT';
 
-const STATUS_STEPS = [
-  { key: 'pending', label: 'Request Received', icon: Package, desc: 'Tumhara request mil gaya, hum process kar rahe hain' },
-  { key: 'quoted', label: 'Quote Ready', icon: CheckCircle, desc: 'Best price quote prepare ho gaya hai' },
-  { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Order confirm ho gaya, supplier assign kiya ja raha hai' },
-  { key: 'dispatched', label: 'Dispatched', icon: Truck, desc: 'Material site ki taraf aa raha hai' },
-  { key: 'delivered', label: 'Delivered', icon: CheckCircle, desc: 'Material deliver ho gaya' },
+const STATUS_STEP_KEYS = [
+  { key: 'pending', labelKey: 'track.step.pending', icon: Package, descKey: 'track.step.pendingDesc' },
+  { key: 'quoted', labelKey: 'track.step.quoted', icon: CheckCircle, descKey: 'track.step.quotedDesc' },
+  { key: 'confirmed', labelKey: 'track.step.confirmed', icon: CheckCircle, descKey: 'track.step.confirmedDesc' },
+  { key: 'dispatched', labelKey: 'track.step.dispatched', icon: Truck, descKey: 'track.step.dispatchedDesc' },
+  { key: 'delivered', labelKey: 'track.step.delivered', icon: CheckCircle, descKey: 'track.step.deliveredDesc' },
 ];
 
 const STATUS_ORDER = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
@@ -28,10 +29,13 @@ const STATUS_COLORS = {
 export default function TrackOrder() {
   const { orderId: paramOrderId } = useParams();
   const navigate = useNavigate();
+  const t = useT();
   const [input, setInput] = useState(paramOrderId || '');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const STATUS_STEPS = STATUS_STEP_KEYS.map(s => ({ ...s, label: t(s.labelKey), desc: t(s.descKey) }));
 
   useEffect(() => {
     if (paramOrderId) fetchOrder(paramOrderId);
@@ -48,9 +52,9 @@ export default function TrackOrder() {
       setOrder(data.order);
     } catch (err) {
       if (err.response?.status === 404) {
-        setError('Order nahi mila. Order ID check karo.');
+        setError(t('track.notFound'));
       } else {
-        setError('Server error. Thodi der baad try karo.');
+        setError(t('track.serverError'));
       }
     } finally {
       setLoading(false);
@@ -71,8 +75,8 @@ export default function TrackOrder() {
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Track Karo</h1>
-          <p className="text-gray-500">Apna Order ID daalo — real-time status milega</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('track.title')}</h1>
+          <p className="text-gray-500">{t('track.sub')}</p>
         </div>
 
         {/* Search */}
@@ -81,7 +85,7 @@ export default function TrackOrder() {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value.toUpperCase())}
-            placeholder="e.g. NS-2024-0001"
+            placeholder={t('track.placeholder')}
             className="flex-1 border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent uppercase"
           />
           <button
@@ -90,7 +94,7 @@ export default function TrackOrder() {
             className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 text-white font-semibold px-5 py-3 rounded-xl transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Track
+            {t('track.btn')}
           </button>
         </form>
 
@@ -98,7 +102,7 @@ export default function TrackOrder() {
         {loading && (
           <div className="flex items-center justify-center gap-3 text-gray-500 py-12">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Dhundh raha hoon...</span>
+            <span>{t('track.searching')}</span>
           </div>
         )}
 
@@ -132,7 +136,7 @@ export default function TrackOrder() {
             {/* Status timeline */}
             {order.status !== 'cancelled' && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-semibold text-gray-900 mb-5">Order Progress</h3>
+                <h3 className="font-semibold text-gray-900 mb-5">{t('track.progress')}</h3>
                 <div className="space-y-0">
                   {STATUS_STEPS.map((s, i) => {
                     const isDone = i <= currentIdx;
@@ -167,7 +171,7 @@ export default function TrackOrder() {
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
                 <XCircle className="w-5 h-5 shrink-0" />
                 <div>
-                  <p className="font-semibold">Order Cancelled</p>
+                  <p className="font-semibold">{t('track.cancelled')}</p>
                   {order.adminNote && <p className="text-sm mt-0.5">{order.adminNote}</p>}
                 </div>
               </div>
@@ -176,31 +180,31 @@ export default function TrackOrder() {
             {/* Quote message */}
             {order.status === 'quoted' && order.quote?.breakdown && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-blue-800 mb-1">Quote Ready hai!</p>
+                <p className="text-sm font-semibold text-blue-800 mb-1">{t('track.quoteReady')}</p>
                 <p className="text-sm text-blue-700">{order.quote.breakdown}</p>
-                <p className="text-xs text-blue-500 mt-2">Hamari team jald hi contact karegi.</p>
+                <p className="text-xs text-blue-500 mt-2">{t('track.teamContact')}</p>
               </div>
             )}
 
             {/* Order details */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">{t('track.orderTitle')}</h3>
               <div className="text-sm space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Category</span>
+                  <span className="text-gray-500">{t('track.category')}</span>
                   <span className="font-medium capitalize">{order.category}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Delivery Date</span>
+                  <span className="text-gray-500">{t('track.deliveryDate')}</span>
                   <span className="font-medium">{new Date(order.delivery?.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Slot</span>
+                  <span className="text-gray-500">{t('track.slot')}</span>
                   <span className="font-medium capitalize">{order.delivery?.slot}</span>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Items</p>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{t('track.items')}</p>
                 {order.items?.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm py-1">
                     <span className="text-gray-700">{item.name}</span>
@@ -213,14 +217,14 @@ export default function TrackOrder() {
             {/* Need help */}
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-gray-800">Help chahiye?</p>
-                <p className="text-xs text-gray-500">Order se related koi problem hai toh call karo</p>
+                <p className="text-sm font-semibold text-gray-800">{t('track.needHelp')}</p>
+                <p className="text-xs text-gray-500">{t('track.helpDesc')}</p>
               </div>
               <a
                 href="tel:+910000000000"
                 className="shrink-0 bg-orange-500 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
               >
-                Call Now
+                {t('track.callNow')}
               </a>
             </div>
           </div>
@@ -230,8 +234,8 @@ export default function TrackOrder() {
         {!order && !loading && !error && (
           <div className="text-center py-12 text-gray-400">
             <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Order ID daalo aur track karo</p>
-            <p className="text-sm mt-1">Order submit karne ke baad ID milta hai</p>
+            <p className="font-medium">{t('track.emptyState')}</p>
+            <p className="text-sm mt-1">{t('track.emptyStateSub')}</p>
           </div>
         )}
       </div>

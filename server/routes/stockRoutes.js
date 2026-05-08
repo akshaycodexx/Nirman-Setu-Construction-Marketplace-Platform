@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/stockController');
-const protectSupplier = require('../middleware/supplierAuth');
-const protect = require('../middleware/adminAuth');
+const { protectSupplier } = require('../middleware/supplierAuth');
+const { protect } = require('../middleware/auth');
 
 // Supplier
 router.get('/my', protectSupplier, ctrl.getMyStock);

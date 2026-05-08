@@ -4,6 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { Wallet, CheckCircle, Clock, IndianRupee, ArrowRight, Loader2, X } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 function PayoutModal({ order, onClose, onPaid }) {
   const [amount, setAmount] = useState(order.payment?.advanceAmount || '');
@@ -87,6 +88,7 @@ const TABS = [
 ];
 
 export default function AdminPayouts() {
+  const t = useT();
   const [orders, setOrders] = useState([]);
   const [summary, setSummary] = useState({ pending: { count: 0, total: 0 }, paid: { count: 0, total: 0 } });
   const [loading, setLoading] = useState(true);
@@ -123,16 +125,16 @@ export default function AdminPayouts() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Wallet className="w-6 h-6 text-orange-500" /> Supplier Payouts
+          <Wallet className="w-6 h-6 text-orange-500" /> {t('admin.nav.payouts')}
         </h1>
-        <p className="text-gray-500 text-sm mt-0.5">Track and manage all supplier payment settlements</p>
+        <p className="text-gray-500 text-sm mt-0.5">{t('admin.payouts.sub')}</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Pending Payouts</span>
+            <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">{t('admin.payouts.pending')}</span>
             <Clock className="w-4 h-4 text-red-400" />
           </div>
           <p className="text-3xl font-black text-red-700">₹{summary.pending.total.toLocaleString('en-IN')}</p>
@@ -140,7 +142,7 @@ export default function AdminPayouts() {
         </div>
         <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Total Paid Out</span>
+            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">{t('admin.payouts.totalPaid')}</span>
             <CheckCircle className="w-4 h-4 text-green-400" />
           </div>
           <p className="text-3xl font-black text-green-700">₹{summary.paid.total.toLocaleString('en-IN')}</p>

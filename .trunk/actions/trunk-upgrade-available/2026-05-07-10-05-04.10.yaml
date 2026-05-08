@@ -1,0 +1,15 @@
+action_id: trunk-upgrade-available
+date: 2026-05-07 10:05:04
+run: trunk upgrade --notify --allow-daemon-start=false
+run_from: ""
+trigger: schedule 1h
+result:
+  exit_code: 1
+  out: ""
+  err: Exception occurred while executing 'trunk-upgrade-available'. See .trunk\out\0qHBy.yaml for details.
+  error_path: C:\Users\AKSHAY\Desktop\Nirman Setu\.trunk\out\0qHBy.yaml
+timestamp: 1778148304
+full_timestamp:
+  nanos: 10154000
+  seconds: 1778148304
+trunk_version: 1.25.0

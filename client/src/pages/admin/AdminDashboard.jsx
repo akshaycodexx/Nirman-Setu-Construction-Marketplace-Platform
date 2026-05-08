@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -8,11 +8,13 @@ import {
   ArrowRight, IndianRupee, Users, FileText, TrendingUp, Wallet, Bell, Flag, ShieldAlert, Star, CalendarClock, BadgeIndianRupee, ThumbsDown, UserPlus
 } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
+import useT from '../../i18n/useT';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const socketRef = useSocket();
+  const t = useT();
 
   useEffect(() => {
     axios.get('/api/admin/dashboard')
@@ -65,8 +67,8 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Nirman Setu — Overview</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('admin.dashboard.title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('admin.dashboard.sub')}</p>
       </div>
 
       {/* Complaints alert */}
@@ -163,43 +165,43 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
         <RevenueCard
           loading={loading}
-          label="Advance Collected"
+          label={t('admin.dashboard.advanceCollected')}
           value={r.advanceCollected ? `₹${r.advanceCollected.toLocaleString('en-IN')}` : '₹0'}
           icon={IndianRupee}
           color="bg-green-500"
-          sub="Payments received"
+          sub={t('admin.dashboard.paymentsReceived')}
         />
         <RevenueCard
           loading={loading}
-          label="Total Quoted Value"
+          label={t('admin.dashboard.totalQuotedValue')}
           value={r.totalQuotedValue ? `₹${r.totalQuotedValue.toLocaleString('en-IN')}` : '₹0'}
           icon={TrendingUp}
           color="bg-orange-500"
-          sub="All quotes combined"
+          sub={t('admin.dashboard.allQuotesCombined')}
         />
         <RevenueCard
           loading={loading}
-          label="Total Orders"
+          label={t('admin.dashboard.totalOrders')}
           value={s.total ?? 0}
           icon={Package}
           color="bg-gray-800"
-          sub={`${s.pending ?? 0} pending action`}
+          sub={t('admin.dashboard.pendingAction', { n: s.pending ?? 0 })}
         />
         <RevenueCard
           loading={loading}
-          label="Customers"
+          label={t('admin.dashboard.customers')}
           value={s.totalCustomers ?? 0}
           icon={Users}
           color="bg-blue-500"
-          sub="Registered accounts"
+          sub={t('admin.dashboard.registeredAccounts')}
         />
         <RevenueCard
           loading={loading}
-          label="Supplier Payable"
+          label={t('admin.dashboard.supplierPayable')}
           value={p.total ? `₹${p.total.toLocaleString('en-IN')}` : '₹0'}
           icon={Wallet}
           color="bg-red-500"
-          sub={`${p.count ?? 0} orders pending`}
+          sub={t('admin.dashboard.ordersPending', { n: p.count ?? 0 })}
           highlight={p.count > 0}
         />
       </div>
@@ -207,12 +209,12 @@ export default function AdminDashboard() {
       {/* Status grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { key: 'pending', label: 'Pending', icon: Clock, cls: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
-          { key: 'quoted', label: 'Quoted', icon: FileText, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
-          { key: 'confirmed', label: 'Confirmed', icon: CheckCircle, cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-          { key: 'dispatched', label: 'Dispatched', icon: Truck, cls: 'bg-orange-50 text-orange-700 border-orange-100' },
-          { key: 'delivered', label: 'Delivered', icon: CheckCircle, cls: 'bg-green-50 text-green-700 border-green-100' },
-          { key: 'cancelled', label: 'Cancelled', icon: XCircle, cls: 'bg-red-50 text-red-700 border-red-100' },
+          { key: 'pending', label: t('status.pending'), icon: Clock, cls: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
+          { key: 'quoted', label: t('status.quoted'), icon: FileText, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+          { key: 'confirmed', label: t('status.confirmed'), icon: CheckCircle, cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+          { key: 'dispatched', label: t('status.dispatched'), icon: Truck, cls: 'bg-orange-50 text-orange-700 border-orange-100' },
+          { key: 'delivered', label: t('status.delivered'), icon: CheckCircle, cls: 'bg-green-50 text-green-700 border-green-100' },
+          { key: 'cancelled', label: t('status.cancelled'), icon: XCircle, cls: 'bg-red-50 text-red-700 border-red-100' },
         ].map(card => (
           <Link key={card.key} to={`/admin/orders?status=${card.key}`}
             className={`rounded-2xl p-4 border ${card.cls} hover:opacity-80 transition-opacity`}>
@@ -226,9 +228,9 @@ export default function AdminDashboard() {
       {/* Recent Orders */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Recent Orders</h2>
+          <h2 className="font-semibold text-gray-900">{t('admin.dashboard.recentOrders')}</h2>
           <Link to="/admin/orders" className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-1 font-medium">
-            All Orders <ArrowRight className="w-3.5 h-3.5" />
+            {t('admin.dashboard.allOrders')} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
@@ -239,7 +241,7 @@ export default function AdminDashboard() {
         ) : !data?.recent?.length ? (
           <div className="px-5 py-12 text-center text-gray-400">
             <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi order nahi abhi</p>
+            <p>{t('admin.dashboard.noOrders')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">

@@ -4,14 +4,20 @@ import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
 import { IndianRupee, Loader2, ArrowRight, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const PAY_STATUS = {
-  paid: { label: 'Paid', cls: 'bg-green-100 text-green-700' },
-  pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700' },
+const PAY_STATUS_CLS = {
+  paid: 'bg-green-100 text-green-700',
+  pending: 'bg-amber-100 text-amber-700',
 };
 
 export default function SupplierEarnings() {
   const { getAuthHeaders } = useSupplier();
+  const t = useT();
+  const PAY_STATUS = {
+    paid: { label: t('suppearnings.payPaid'), cls: PAY_STATUS_CLS.paid },
+    pending: { label: t('suppearnings.payPending'), cls: PAY_STATUS_CLS.pending },
+  };
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,9 +36,9 @@ export default function SupplierEarnings() {
     <SupplierLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <IndianRupee className="w-6 h-6 text-emerald-500" /> Earnings
+          <IndianRupee className="w-6 h-6 text-emerald-500" /> {t('suppearnings.title')}
         </h1>
-        <p className="text-gray-500 text-sm mt-0.5">Aapka payout history aur pending payments</p>
+        <p className="text-gray-500 text-sm mt-0.5">{t('suppearnings.sub')}</p>
       </div>
 
       {/* Summary cards */}
@@ -40,32 +46,32 @@ export default function SupplierEarnings() {
         <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Earned</span>
+            <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">{t('suppearnings.totalEarned')}</span>
           </div>
           <p className="text-3xl font-black text-green-800">
             {loading ? '—' : `₹${(data?.totalEarned || 0).toLocaleString('en-IN')}`}
           </p>
-          <p className="text-xs text-green-600 mt-1">{paidOrders.length} orders paid</p>
+          <p className="text-xs text-green-600 mt-1">{t('suppearnings.paidOrders', { n: paidOrders.length })}</p>
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-amber-600" />
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Pending from Admin</span>
+            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">{t('suppearnings.pendingAdmin')}</span>
           </div>
           <p className="text-3xl font-black text-amber-800">
             {loading ? '—' : `₹${(data?.totalPending || 0).toLocaleString('en-IN')}`}
           </p>
-          <p className="text-xs text-amber-600 mt-1">{pendingOrders.length} orders awaiting payout</p>
+          <p className="text-xs text-amber-600 mt-1">{t('suppearnings.awaitingPayout', { n: pendingOrders.length })}</p>
         </div>
 
         <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-gray-600" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Orders</span>
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('suppearnings.totalOrders')}</span>
           </div>
           <p className="text-3xl font-black text-gray-800">{loading ? '—' : orders.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Lifetime assigned</p>
+          <p className="text-xs text-gray-500 mt-1">{t('suppearnings.lifetime')}</p>
         </div>
       </div>
 
@@ -74,9 +80,9 @@ export default function SupplierEarnings() {
         <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden mb-4">
           <div className="px-5 py-4 border-b border-amber-100 bg-amber-50">
             <h2 className="font-semibold text-amber-800 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Pending Payouts ({pendingOrders.length})
+              <Clock className="w-4 h-4" /> {t('suppearnings.pendingPayouts', { n: pendingOrders.length })}
             </h2>
-            <p className="text-xs text-amber-600 mt-0.5">Yeh orders complete ho gaye hain, admin payout pending hai</p>
+            <p className="text-xs text-amber-600 mt-0.5">{t('suppearnings.pendingNote')}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {pendingOrders.map(o => (
@@ -100,14 +106,14 @@ export default function SupplierEarnings() {
       {/* All earnings history */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Payment History</h2>
+          <h2 className="font-semibold text-gray-900">{t('suppearnings.payHistory')}</h2>
         </div>
         {loading ? (
           <div className="py-16 text-center"><Loader2 className="w-5 h-5 text-gray-400 animate-spin mx-auto" /></div>
         ) : orders.filter(o => o.payment?.status !== 'none').length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <IndianRupee className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Abhi koi payment nahi</p>
+            <p>{t('suppearnings.noPayment')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -127,7 +133,7 @@ export default function SupplierEarnings() {
                     <p className="text-xs text-gray-500 capitalize">{o.category} · {o.delivery?.city}</p>
                     {isPaid && o.supplierPayout?.paidAt && (
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Paid: {new Date(o.supplierPayout.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {t('suppearnings.paidOn', { date: new Date(o.supplierPayout.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) })}
                       </p>
                     )}
                   </div>

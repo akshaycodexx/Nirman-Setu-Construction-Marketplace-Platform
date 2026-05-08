@@ -246,8 +246,10 @@ const updateStatus = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: order.status, adminNote: order.adminNote });
-      io.to('admin').emit('order:updated', { orderId: order.orderId, status: order.status });
+      const payload = { orderId: order.orderId, status: order.status, adminNote: order.adminNote };
+      io.to(`order:${order.orderId}`).emit('order:updated', payload);
+      io.to('admin').emit('order:updated', payload);
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', payload);
     }
 
     res.json({ success: true, order });
@@ -285,7 +287,9 @@ const sendQuote = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: 'quoted', quoteAmount: order.quote?.amount });
+      const payload = { orderId: order.orderId, status: 'quoted', quoteAmount: order.quote?.amount };
+      io.to(`order:${order.orderId}`).emit('order:updated', payload);
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', payload);
     }
 
     res.json({ success: true, order });
@@ -336,7 +340,9 @@ const assignSupplier = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`order:${order.orderId}`).emit('order:updated', { orderId: order.orderId, status: 'confirmed' });
+      const payload = { orderId: order.orderId, status: 'confirmed' };
+      io.to(`order:${order.orderId}`).emit('order:updated', payload);
+      if (order.customerId) io.to(`customer:${order.customerId}`).emit('customer:order-updated', payload);
       io.to(`supplier:${supplierId}`).emit('supplier:new-order', {
         orderId: order.orderId,
         category: order.category,

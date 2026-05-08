@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AdminLayout, { StatusBadge } from '../../components/AdminLayout';
+import useT from '../../i18n/useT';
 
 const PAYMENT_BADGE = {
   advance_paid: 'bg-blue-100 text-blue-700',
@@ -26,6 +27,7 @@ const RISK_ROW = {
 };
 
 export default function AdminOrders() {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
@@ -89,16 +91,16 @@ export default function AdminOrders() {
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-orange-500" /> Orders
+            <ClipboardList className="w-6 h-6 text-orange-500" /> {t('admin.nav.orders')}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">{total} total orders</p>
+          <p className="text-gray-500 text-sm mt-0.5">{t('admin.orders.total', { n: total })}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" /> {t('admin.orders.exportCsv')}
           </button>
           <button onClick={fetchOrders} className="text-gray-500 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100">
             <RefreshCw className="w-4 h-4" />
@@ -117,7 +119,7 @@ export default function AdminOrders() {
               defaultValue={search}
               onKeyDown={e => e.key === 'Enter' && setFilter('search', e.target.value)}
               onBlur={e => setFilter('search', e.target.value)}
-              placeholder="Search by Order ID, customer name, phone..."
+              placeholder={t('admin.orders.searchPh')}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
             />
           </div>
@@ -128,7 +130,7 @@ export default function AdminOrders() {
               defaultValue={city}
               onKeyDown={e => e.key === 'Enter' && setFilter('city', e.target.value)}
               onBlur={e => setFilter('city', e.target.value)}
-              placeholder="Filter by city..."
+              placeholder={t('admin.orders.cityPh')}
               className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
             />
           </div>
@@ -146,7 +148,7 @@ export default function AdminOrders() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {s}
+              {s === 'all' ? t('admin.common.all') : t(`status.${s}`)}
             </button>
           ))}
           <button
@@ -157,14 +159,14 @@ export default function AdminOrders() {
                 : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
             }`}
           >
-            <Flag className="w-3 h-3" /> Complaints
+            <Flag className="w-3 h-3" /> {t('admin.nav.complaints')}
           </button>
         </div>
 
         {/* Risk filter */}
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
-            <ShieldAlert className="w-3.5 h-3.5" /> Risk:
+            <ShieldAlert className="w-3.5 h-3.5" /> {t('admin.common.risk')}:
           </span>
           {['all', 'green', 'yellow', 'red'].map(r => (
             <button
@@ -176,7 +178,7 @@ export default function AdminOrders() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {r === 'all' ? 'All' : r === 'green' ? 'Low Risk' : r === 'yellow' ? 'Caution' : 'High Risk'}
+              {r === 'all' ? t('admin.common.all') : t(`admin.risk.${r}`)}
             </button>
           ))}
         </div>
@@ -191,18 +193,18 @@ export default function AdminOrders() {
         ) : orders.length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi order nahi mila</p>
+            <p>{t('admin.orders.empty')}</p>
           </div>
         ) : (
           <>
             {/* Header */}
             <div className="hidden sm:grid grid-cols-12 px-5 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              <div className="col-span-2">Order ID</div>
-              <div className="col-span-3">Customer</div>
-              <div className="col-span-2">Category</div>
-              <div className="col-span-2">City</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-1">Date</div>
+              <div className="col-span-2">{t('admin.orders.orderId')}</div>
+              <div className="col-span-3">{t('admin.orders.customer')}</div>
+              <div className="col-span-2">{t('admin.orders.category')}</div>
+              <div className="col-span-2">{t('admin.orders.city')}</div>
+              <div className="col-span-2">{t('admin.common.status')}</div>
+              <div className="col-span-1">{t('admin.orders.date')}</div>
             </div>
 
             <div className="divide-y divide-gray-50">
@@ -220,7 +222,7 @@ export default function AdminOrders() {
                       <p className="text-sm font-medium text-gray-800 truncate">{order.customer?.name}</p>
                       {order.customerRisk && order.customerRisk !== 'green' && (
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${RISK_CONFIG[order.customerRisk]?.cls}`}>
-                          {RISK_CONFIG[order.customerRisk]?.label}
+                          {t(`admin.risk.${order.customerRisk}`)}
                         </span>
                       )}
                     </div>
@@ -240,7 +242,7 @@ export default function AdminOrders() {
                     <StatusBadge status={order.status} />
                     {PAYMENT_BADGE[order.payment?.status] && (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PAYMENT_BADGE[order.payment.status]}`}>
-                        {order.payment.status === 'advance_paid' ? 'Advance' : 'Paid'}
+                        {order.payment.status === 'advance_paid' ? t('admin.orders.advance') : t('admin.fees.paid')}
                       </span>
                     )}
                     {order.complaint?.text && order.complaint?.status === 'open' && (
@@ -263,21 +265,21 @@ export default function AdminOrders() {
       {/* Pagination */}
       {total > 20 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-          <span>Page {page} of {Math.ceil(total / 20)}</span>
+          <span>{t('admin.common.pageOf', { page, total: Math.ceil(total / 20) })}</span>
           <div className="flex gap-2">
             <button
               disabled={page <= 1}
               onClick={() => setFilter('page', page - 1)}
               className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
             >
-              Prev
+              {t('admin.common.prev')}
             </button>
             <button
               disabled={page >= Math.ceil(total / 20)}
               onClick={() => setFilter('page', page + 1)}
               className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
             >
-              Next
+              {t('common.next')}
             </button>
           </div>
         </div>

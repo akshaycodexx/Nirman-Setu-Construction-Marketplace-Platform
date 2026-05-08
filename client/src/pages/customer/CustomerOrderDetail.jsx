@@ -8,6 +8,7 @@ import CustomerLayout, { StatusBadge, PaymentBadge } from '../../components/Cust
 import ChatPanel from '../../components/ChatPanel';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, MapPin, Calendar, CreditCard, Loader2, CheckCircle, AlertCircle, XCircle, Receipt, Star, Flag, RotateCcw } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const STATUS_STEPS = ['pending', 'quoted', 'confirmed', 'dispatched', 'delivered'];
 
@@ -27,6 +28,7 @@ export default function CustomerOrderDetail() {
   const navigate = useNavigate();
   const { customer, authHeader } = useCustomer();
   const socketRef = useSocket();
+  const t = useT();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -42,7 +44,7 @@ export default function CustomerOrderDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
 
   const handleComplaint = async () => {
-    if (!complaintText.trim()) { toast.error('Complaint likhein'); return; }
+    if (!complaintText.trim()) { toast.error(t('custod.complaintEmpty')); return; }
     setSubmittingComplaint(true);
     try {
       const { data } = await axios.post(
@@ -52,16 +54,16 @@ export default function CustomerOrderDetail() {
       );
       setOrder(data.order);
       setComplaintText('');
-      toast.success('Complaint submit ho gayi. Hum jald hi contact karenge.');
+      toast.success(t('custod.complaintSuccess'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Complaint failed');
+      toast.error(err.response?.data?.message || t('custod.complaintFailed'));
     } finally {
       setSubmittingComplaint(false);
     }
   };
 
   const handleReview = async () => {
-    if (!reviewRating) { toast.error('Rating select karo'); return; }
+    if (!reviewRating) { toast.error(t('custod.ratingRequired')); return; }
     setSubmittingReview(true);
     try {
       const { data } = await axios.post(
@@ -70,9 +72,9 @@ export default function CustomerOrderDetail() {
         { headers: authHeader() }
       );
       setOrder(data.order);
-      toast.success('Review dene ke liye shukriya!');
+      toast.success(t('custod.reviewSuccess'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Review failed');
+      toast.error(err.response?.data?.message || t('custod.reviewFailed'));
     } finally {
       setSubmittingReview(false);
     }
@@ -81,7 +83,7 @@ export default function CustomerOrderDetail() {
   const fetchOrder = () =>
     axios.get(`/api/customer/orders/${orderId}`, { headers: authHeader() })
       .then(r => setOrder(r.data))
-      .catch(() => toast.error('Order not found'))
+      .catch(() => toast.error(t('custod.notFound')))
       .finally(() => setLoading(false));
 
   const fetchFee = () =>
@@ -93,7 +95,7 @@ export default function CustomerOrderDetail() {
     setPayingFee(true);
     try {
       const loaded = await loadRazorpayScript();
-      if (!loaded) { toast.error('Payment gateway load nahi hua'); return; }
+      if (!loaded) { toast.error(t('custod.feeGwFailed')); return; }
       const { data } = await axios.post(`/api/customer/orders/${orderId}/fee/create`, {}, { headers: authHeader() });
       const options = {
         key: data.keyId,
@@ -113,14 +115,14 @@ export default function CustomerOrderDetail() {
               feeId: data.feeId,
             }, { headers: authHeader() });
             setPlatformFee(null);
-            toast.success('Platform fee paid! Shukriya.');
-          } catch { toast.error('Verification failed. Support se contact karo.'); }
+            toast.success(t('custod.feePaid'));
+          } catch { toast.error(t('custod.feeVerifyFailed')); }
         },
         modal: { ondismiss: () => setPayingFee(false) },
       };
       new window.Razorpay(options).open();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Payment shuru nahi ho saka');
+      toast.error(err.response?.data?.message || t('custod.feeInitFailed'));
     } finally {
       setPayingFee(false);
     }
@@ -136,8 +138,7 @@ export default function CustomerOrderDetail() {
     socket.emit('join:order', orderId);
 
     const handleUpdate = (data) => {
-      const statusLabels = { pending: 'Pending', quoted: 'Quote Ready', confirmed: 'Confirmed', dispatched: 'Dispatched', delivered: 'Delivered', cancelled: 'Cancelled' };
-      toast.success(`Order update: ${statusLabels[data.status] || data.status}`);
+      toast.success(t('custod.orderUpdate', { status: data.status }));
       fetchOrder();
     };
 
@@ -149,14 +150,14 @@ export default function CustomerOrderDetail() {
   }, [socketRef, orderId]);
 
   const handleCancel = async () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    if (!window.confirm(t('custod.cancelConfirm'))) return;
     setCancelling(true);
     try {
       const { data } = await axios.put(`/api/customer/orders/${orderId}/cancel`, {}, { headers: authHeader() });
       setOrder(data.order);
-      toast.success('Order cancelled');
+      toast.success(t('custod.cancelled'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Cancel failed');
+      toast.error(err.response?.data?.message || t('custod.cancelBtn'));
     } finally {
       setCancelling(false);
     }
@@ -166,7 +167,7 @@ export default function CustomerOrderDetail() {
     setPaying(true);
     try {
       const loaded = await loadRazorpayScript();
-      if (!loaded) { toast.error('Payment gateway failed to load. Check your internet.'); return; }
+      if (!loaded) { toast.error(t('custod.gwFailed')); return; }
 
       const { data } = await axios.post(
         `/api/customer/orders/${orderId}/payment/create`,
@@ -198,9 +199,9 @@ export default function CustomerOrderDetail() {
               { headers: authHeader() }
             );
             setOrder(verifyData.order);
-            toast.success('Payment successful! Order confirmed.');
+            toast.success(t('custod.paySuccess'));
           } catch {
-            toast.error('Payment verification failed. Contact support.');
+            toast.error(t('custod.payVerifyFailed'));
           }
         },
         modal: {
@@ -219,7 +220,7 @@ export default function CustomerOrderDetail() {
 
   if (loading) return (
     <CustomerLayout>
-      <div className="flex items-center justify-center py-24 text-gray-400">Loading...</div>
+      <div className="flex items-center justify-center py-24 text-gray-400">{t('custod.loading')}</div>
     </CustomerLayout>
   );
 
@@ -227,8 +228,8 @@ export default function CustomerOrderDetail() {
     <CustomerLayout>
       <div className="text-center py-24">
         <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <p className="text-gray-600">Order not found.</p>
-        <Link to="/customer/orders" className="text-blue-500 text-sm mt-2 block">← Back to orders</Link>
+        <p className="text-gray-600">{t('custod.notFound')}</p>
+        <Link to="/customer/orders" className="text-blue-500 text-sm mt-2 block">{t('custod.backOrders')}</Link>
       </div>
     </CustomerLayout>
   );
@@ -256,11 +257,11 @@ export default function CustomerOrderDetail() {
               <>
                 <Link to={`/receipt/${order.orderId}`} target="_blank"
                   className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition-colors">
-                  <Receipt className="w-3 h-3" /> Receipt
+                  <Receipt className="w-3 h-3" /> {t('custod.receipt')}
                 </Link>
                 <Link to={`/invoice/${order.orderId}`} target="_blank"
                   className="flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700 border border-orange-200 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors">
-                  <Receipt className="w-3 h-3" /> GST Invoice
+                  <Receipt className="w-3 h-3" /> {t('custod.gstInvoice')}
                 </Link>
               </>
             )}
@@ -272,14 +273,14 @@ export default function CustomerOrderDetail() {
                 }}
                 className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors"
               >
-                <RotateCcw className="w-3 h-3" /> Re-order
+                <RotateCcw className="w-3 h-3" /> {t('custod.reorder')}
               </button>
             )}
             {canCancel && (
               <button onClick={handleCancel} disabled={cancelling}
                 className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50">
                 {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                Cancel
+                {t('custod.cancelBtn')}
               </button>
             )}
           </div>
@@ -288,7 +289,7 @@ export default function CustomerOrderDetail() {
         {/* Progress tracker */}
         {order.status !== 'cancelled' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Order Progress</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t('custod.progress')}</h2>
             <div className="flex items-center gap-0">
               {STATUS_STEPS.map((step, i) => (
                 <div key={step} className="flex items-center flex-1">
@@ -314,7 +315,7 @@ export default function CustomerOrderDetail() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-gray-700">Quote from Nirman Setu</h2>
+                <h2 className="text-sm font-semibold text-gray-700">{t('custod.quoteFrom')}</h2>
                 <p className="text-3xl font-bold text-gray-900 mt-1">₹{order.quote.amount.toLocaleString('en-IN')}</p>
                 {order.quote.breakdown && (
                   <p className="text-gray-500 text-sm mt-1 whitespace-pre-wrap">{order.quote.breakdown}</p>
@@ -326,15 +327,15 @@ export default function CustomerOrderDetail() {
             {canPay && (
               <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-blue-800 text-sm font-medium mb-1">
-                  Advance required: ₹{Math.ceil(order.quote.amount * 0.3).toLocaleString('en-IN')} (30%)
+                  {t('custod.advReq', { amount: Math.ceil(order.quote.amount * 0.3).toLocaleString('en-IN') })}
                 </p>
-                <p className="text-blue-600 text-xs mb-3">Pay the advance to confirm your order and start processing.</p>
+                <p className="text-blue-600 text-xs mb-3">{t('custod.advDesc')}</p>
                 <button
                   onClick={handlePayAdvance}
                   disabled={paying}
                   className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
                 >
-                  {paying ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><CreditCard className="w-4 h-4" /> Pay Advance</>}
+                  {paying ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('custod.processing')}</> : <><CreditCard className="w-4 h-4" /> {t('custod.payAdv')}</>}
                 </button>
               </div>
             )}
@@ -343,15 +344,15 @@ export default function CustomerOrderDetail() {
               <>
                 <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl p-3 text-sm">
                   <CheckCircle className="w-4 h-4 shrink-0" />
-                  <span>Advance of ₹{order.payment.advanceAmount?.toLocaleString('en-IN')} paid. Order confirmed!</span>
+                  <span>{t('custod.advPaid', { amount: order.payment.advanceAmount?.toLocaleString('en-IN') })}</span>
                 </div>
                 <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Balance Due on Delivery (Cash)</p>
+                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">{t('custod.balDue')}</p>
                   <p className="text-2xl font-black text-blue-900 mt-1">
                     ₹{(order.quote.amount - order.payment.advanceAmount).toLocaleString('en-IN')}
                   </p>
                   <p className="text-xs text-blue-500 mt-0.5">
-                    Total ₹{order.quote.amount.toLocaleString('en-IN')} − Advance ₹{order.payment.advanceAmount.toLocaleString('en-IN')}
+                    {t('custod.balCalc', { total: order.quote.amount.toLocaleString('en-IN'), adv: order.payment.advanceAmount.toLocaleString('en-IN') })}
                   </p>
                 </div>
               </>
@@ -359,7 +360,7 @@ export default function CustomerOrderDetail() {
             {order.payment.status === 'fully_paid' && (
               <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl p-3 text-sm">
                 <CheckCircle className="w-4 h-4 shrink-0" />
-                <span>Fully paid — ₹{order.quote.amount.toLocaleString('en-IN')}. Shukriya!</span>
+                <span>{t('custod.fullyPaid', { amount: order.quote.amount.toLocaleString('en-IN') })}</span>
               </div>
             )}
           </div>
@@ -368,7 +369,7 @@ export default function CustomerOrderDetail() {
         {/* Items */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Package className="w-4 h-4" /> Items Ordered
+            <Package className="w-4 h-4" /> {t('custod.itemsOrdered')}
           </h2>
           <div className="divide-y divide-gray-50">
             {order.items.map((item, i) => (
@@ -383,11 +384,11 @@ export default function CustomerOrderDetail() {
         {/* Delivery */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <MapPin className="w-4 h-4" /> Delivery Details
+            <MapPin className="w-4 h-4" /> {t('custod.deliveryDets')}
           </h2>
           <div className="space-y-1.5 text-sm text-gray-700">
             <p>{order.delivery.address}, {order.delivery.city}</p>
-            {order.delivery.pincode && <p className="text-gray-500">Pincode: {order.delivery.pincode}</p>}
+            {order.delivery.pincode && <p className="text-gray-500">{t('custod.pincode', { p: order.delivery.pincode })}</p>}
             <div className="flex items-center gap-2 mt-1">
               <Calendar className="w-3.5 h-3.5 text-gray-400" />
               <span>{new Date(order.delivery.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -403,15 +404,15 @@ export default function CustomerOrderDetail() {
             <div className="flex items-start gap-3">
               <CreditCard className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h2 className="text-sm font-bold text-orange-800">Platform Service Fee Due</h2>
-                <p className="text-orange-700 text-xs mt-0.5">Nirman Setu ka service charge — call pe agree kiya tha.</p>
+                <h2 className="text-sm font-bold text-orange-800">{t('custod.platformFeeTitle')}</h2>
+                <p className="text-orange-700 text-xs mt-0.5">{t('custod.platformFeeNote')}</p>
                 <p className="text-2xl font-black text-orange-900 mt-2">₹{platformFee.amount.toLocaleString('en-IN')}</p>
                 {platformFee.note && <p className="text-xs text-orange-600 italic mt-0.5">{platformFee.note}</p>}
               </div>
             </div>
             <button onClick={handlePayFee} disabled={payingFee}
               className="mt-4 w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
-              {payingFee ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><CreditCard className="w-4 h-4" /> Pay Platform Fee</>}
+              {payingFee ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('custod.processing')}</> : <><CreditCard className="w-4 h-4" /> {t('custod.payFee')}</>}
             </button>
           </div>
         )}
@@ -419,7 +420,7 @@ export default function CustomerOrderDetail() {
         {/* Notes */}
         {order.notes && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Your Notes</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">{t('custod.yourNotes')}</h2>
             <p className="text-gray-600 text-sm">{order.notes}</p>
           </div>
         )}
@@ -431,16 +432,16 @@ export default function CustomerOrderDetail() {
               <>
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Flag className={`w-4 h-4 ${order.complaint.status === 'resolved' ? 'text-green-500' : 'text-red-500'}`} />
-                  Complaint
+                  {t('custod.complaint')}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-1 ${order.complaint.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {order.complaint.status === 'resolved' ? 'Resolved' : 'Open'}
+                    {order.complaint.status === 'resolved' ? t('custod.complaintResolved') : t('custod.complaintOpen')}
                   </span>
                 </h2>
                 <p className="text-sm text-gray-700 bg-red-50 rounded-xl p-3 mb-2">"{order.complaint.text}"</p>
                 <p className="text-xs text-gray-400">{new Date(order.complaint.raisedAt).toLocaleDateString('en-IN')}</p>
                 {order.complaint.resolution && (
                   <div className="mt-3 bg-green-50 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-green-700 mb-1">Admin Response:</p>
+                    <p className="text-xs font-semibold text-green-700 mb-1">{t('custod.adminResp')}</p>
                     <p className="text-sm text-green-800">{order.complaint.resolution}</p>
                     <p className="text-xs text-green-600 mt-1">{new Date(order.complaint.resolvedAt).toLocaleDateString('en-IN')}</p>
                   </div>
@@ -449,19 +450,19 @@ export default function CustomerOrderDetail() {
             ) : (
               <>
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Flag className="w-4 h-4 text-gray-400" /> Koi Problem Hai?
+                  <Flag className="w-4 h-4 text-gray-400" /> {t('custod.problemTitle')}
                 </h2>
                 <textarea
                   value={complaintText}
                   onChange={e => setComplaintText(e.target.value)}
-                  placeholder="Problem batao — delivery issue, quality issue, ya kuch aur..."
+                  placeholder={t('custod.problemPlaceholder')}
                   rows={2}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-3"
                 />
                 <button onClick={handleComplaint} disabled={!complaintText.trim() || submittingComplaint}
                   className="flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
                   {submittingComplaint ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
-                  Raise Complaint
+                  {t('custod.raiseComplaint')}
                 </button>
               </>
             )}
@@ -474,7 +475,7 @@ export default function CustomerOrderDetail() {
             {order.review?.rating ? (
               <>
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> Aapka Review
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> {t('custod.yourReview')}
                 </h2>
                 <div className="flex items-center gap-1 mb-2">
                   {[1,2,3,4,5].map(s => (
@@ -488,7 +489,7 @@ export default function CustomerOrderDetail() {
             ) : (
               <>
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-400" /> Rate Your Experience
+                  <Star className="w-4 h-4 text-yellow-400" /> {t('custod.rateExp')}
                 </h2>
                 <div className="flex items-center gap-1 mb-4">
                   {[1,2,3,4,5].map(s => (
@@ -506,20 +507,20 @@ export default function CustomerOrderDetail() {
                   ))}
                   {reviewRating > 0 && (
                     <span className="ml-2 text-sm font-medium text-gray-600">
-                      {['', 'Bahut Bura', 'Bura', 'Theek', 'Achha', 'Bahut Achha'][reviewRating]}
+                      {[null, t('custod.rating.1'), t('custod.rating.2'), t('custod.rating.3'), t('custod.rating.4'), t('custod.rating.5')][reviewRating]}
                     </span>
                   )}
                 </div>
                 <textarea
                   value={reviewComment}
                   onChange={e => setReviewComment(e.target.value)}
-                  placeholder="Experience batao... (optional)"
+                  placeholder={t('custod.reviewPlaceholder')}
                   rows={2}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none mb-3"
                 />
                 <button onClick={handleReview} disabled={!reviewRating || submittingReview}
                   className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-200 disabled:text-gray-400 text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-                  {submittingReview ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : <><Star className="w-4 h-4 fill-gray-900" /> Submit Review</>}
+                  {submittingReview ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('custod.submitting')}</> : <><Star className="w-4 h-4 fill-gray-900" /> {t('custod.submitReview')}</>}
                 </button>
               </>
             )}
@@ -532,15 +533,15 @@ export default function CustomerOrderDetail() {
         {/* Timeline */}
         {order.timeline?.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Activity</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('custod.activity')}</h2>
             <div className="space-y-3">
-              {[...order.timeline].reverse().map((t, i) => (
+              {[...order.timeline].reverse().map((entry, i) => (
                 <div key={i} className="flex gap-3 text-sm">
                   <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                   <div>
-                    <span className="capitalize font-medium text-gray-800">{t.status}</span>
-                    {t.note && <span className="text-gray-500"> — {t.note}</span>}
-                    <p className="text-gray-400 text-xs mt-0.5">{new Date(t.at).toLocaleString('en-IN')}</p>
+                    <span className="capitalize font-medium text-gray-800">{entry.status}</span>
+                    {entry.note && <span className="text-gray-500"> — {entry.note}</span>}
+                    <p className="text-gray-400 text-xs mt-0.5">{new Date(entry.at).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               ))}

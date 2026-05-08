@@ -4,15 +4,16 @@ import { useSupplier } from '../context/SupplierContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
 import { LayoutDashboard, ClipboardList, LogOut, HardHat, Menu, X, ChevronRight, CheckCircle, Settings, Bell, IndianRupee, MessageSquare, Hammer, Boxes } from 'lucide-react';
+import useT from '../i18n/useT';
 
-const navLinks = [
-  { to: '/supplier/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/supplier/orders', icon: ClipboardList, label: 'My Orders' },
-  { to: '/supplier/quotes', icon: MessageSquare, label: 'Quote Requests' },
-  { to: '/supplier/labour', icon: Hammer, label: 'Labour Jobs' },
-  { to: '/supplier/stock', icon: Boxes, label: 'My Stock' },
-  { to: '/supplier/earnings', icon: IndianRupee, label: 'Earnings' },
-  { to: '/supplier/profile', icon: Settings, label: 'Profile' },
+const NAV_KEYS = [
+  { to: '/supplier/dashboard', icon: LayoutDashboard, key: 'supp.nav.dashboard' },
+  { to: '/supplier/orders', icon: ClipboardList, key: 'supp.nav.orders' },
+  { to: '/supplier/quotes', icon: MessageSquare, key: 'supp.nav.quotes' },
+  { to: '/supplier/labour', icon: Hammer, key: 'supp.nav.labour' },
+  { to: '/supplier/stock', icon: Boxes, key: 'supp.nav.stock' },
+  { to: '/supplier/earnings', icon: IndianRupee, key: 'supp.nav.earnings' },
+  { to: '/supplier/profile', icon: Settings, key: 'supp.nav.profile' },
 ];
 
 export default function SupplierLayout({ children }) {
@@ -20,6 +21,8 @@ export default function SupplierLayout({ children }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const socketRef = useSocket();
+  const t = useT();
+  const navLinks = NAV_KEYS.map(n => ({ ...n, label: t(n.key) }));
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function SupplierLayout({ children }) {
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-red-400 transition-colors"
         >
-          <LogOut className="w-4 h-4" /> Logout
+          <LogOut className="w-4 h-4" /> {t('common.logout')}
         </button>
       </div>
     </div>

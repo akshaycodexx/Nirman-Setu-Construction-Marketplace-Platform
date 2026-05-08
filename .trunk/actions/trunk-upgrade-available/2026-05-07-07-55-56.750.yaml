@@ -1,0 +1,15 @@
+action_id: trunk-upgrade-available
+date: 2026-05-07 07:55:56
+run: trunk upgrade --notify --allow-daemon-start=false
+run_from: ""
+trigger: schedule 1h
+result:
+  exit_code: 1
+  out: ""
+  err: Exception occurred while executing 'trunk-upgrade-available'. See .trunk\out\vmvMZ.yaml for details.
+  error_path: C:\Users\AKSHAY\Desktop\Nirman Setu\.trunk\out\vmvMZ.yaml
+timestamp: 1778140556
+full_timestamp:
+  nanos: 750037000
+  seconds: 1778140556
+trunk_version: 1.25.0

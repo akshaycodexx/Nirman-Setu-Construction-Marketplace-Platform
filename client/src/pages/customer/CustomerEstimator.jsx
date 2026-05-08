@@ -3,18 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomerLayout from '../../components/CustomerLayout';
 import { Calculator, Plus, Info, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const PROJECT_TYPES = [
-  { id: 'house', label: 'Ghar (Residential)' },
-  { id: 'commercial', label: 'Dukan / Office (Commercial)' },
-  { id: 'boundary', label: 'Boundary Wall' },
-  { id: 'slab', label: 'Chhath / Slab Only' },
+const PROJECT_TYPE_KEYS = [
+  { id: 'house',      labelKey: 'custest.projtype.house' },
+  { id: 'commercial', labelKey: 'custest.projtype.commercial' },
+  { id: 'boundary',   labelKey: 'custest.projtype.boundary' },
+  { id: 'slab',       labelKey: 'custest.projtype.slab' },
 ];
 
-const QUALITY = [
-  { id: 'basic', label: 'Basic', desc: 'Sasta material, kaam chalau' },
-  { id: 'standard', label: 'Standard', desc: 'Seedha sahi kaam' },
-  { id: 'premium', label: 'Premium', desc: 'Best quality' },
+const QUALITY_KEYS = [
+  { id: 'basic',    labelKey: 'custest.quality.basic.label',    descKey: 'custest.quality.basic.desc' },
+  { id: 'standard', labelKey: 'custest.quality.standard.label', descKey: 'custest.quality.standard.desc' },
+  { id: 'premium',  labelKey: 'custest.quality.premium.label',  descKey: 'custest.quality.premium.desc' },
 ];
 
 // Per sqft per floor ratios (standard construction norms)
@@ -60,20 +61,10 @@ const UNIT_MAP = {
   paint:  'litre',
 };
 
-const MATERIAL_LABELS = {
-  cement: 'Cement',
-  sand:   'Sand (Ret)',
-  gitti:  'Gitti / Aggregate',
-  brick:  'Bricks (Eet)',
-  steel:  'Steel / TMT Bars',
-  paint:  'Paint',
-};
-
 function cftToCubicMeter(cft) { return +(cft * 0.0283168).toFixed(2); }
 function kgToTon(kg) { return +(kg / 1000).toFixed(2); }
 function litresToLitre(l) { return Math.ceil(l); }
 
-// Build live rate lookup: material key → { min, max, unit, isLive }
 function buildLiveLookup(liveRates) {
   const MAP = { cement: ['cement'], sand: ['sand'], gitti: ['aggregate'], brick: ['brick'], steel: ['steel'] };
   const lookup = {};
@@ -85,6 +76,7 @@ function buildLiveLookup(liveRates) {
 }
 
 function MaterialRow({ name, qty, priceRange, liveRange, onRequest }) {
+  const t = useT();
   const range = liveRange || priceRange;
   const minCost = Math.round(qty * range.min);
   const maxCost = Math.round(qty * range.max);
@@ -94,7 +86,7 @@ function MaterialRow({ name, qty, priceRange, liveRange, onRequest }) {
       <div className="flex items-center justify-between px-4 py-3.5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-gray-900 text-sm">{MATERIAL_LABELS[name]}</p>
+            <p className="font-semibold text-gray-900 text-sm">{t(`custest.mat.${name}`)}</p>
             {liveRange && (
               <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
                 <Zap className="w-2.5 h-2.5" /> Live
@@ -107,7 +99,7 @@ function MaterialRow({ name, qty, priceRange, liveRange, onRequest }) {
           </p>
         </div>
         <div className="text-right mr-3">
-          <p className="text-xs text-gray-400">Est. Cost</p>
+          <p className="text-xs text-gray-400">{t('custest.estCost')}</p>
           <p className="text-sm font-bold text-gray-700">
             ₹{minCost.toLocaleString('en-IN')} – ₹{maxCost.toLocaleString('en-IN')}
           </p>
@@ -123,10 +115,14 @@ function MaterialRow({ name, qty, priceRange, liveRange, onRequest }) {
 
 export default function CustomerEstimator() {
   const navigate = useNavigate();
+  const t = useT();
   const [form, setForm] = useState({ area: '', floors: '1', projectType: 'house', quality: 'standard' });
   const [result, setResult] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [liveLookup, setLiveLookup] = useState({});
+
+  const projectTypes = PROJECT_TYPE_KEYS.map(p => ({ ...p, label: t(p.labelKey) }));
+  const qualityOptions = QUALITY_KEYS.map(q => ({ ...q, label: t(q.labelKey), desc: t(q.descKey) }));
 
   useEffect(() => {
     axios.get('/api/rates').then(r => {
@@ -165,7 +161,7 @@ export default function CustomerEstimator() {
 
   const handleRequest = (materialName, qty) => {
     const unit = UNIT_MAP[materialName];
-    const label = MATERIAL_LABELS[materialName];
+    const label = t(`custest.mat.${materialName}`);
     navigate('/customer/quotes', {
       state: {
         prefill: {
@@ -192,8 +188,8 @@ export default function CustomerEstimator() {
               <Calculator className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Material Estimator</h1>
-              <p className="text-indigo-100 text-sm mt-0.5">Project ka area batao — materials ka estimate milega</p>
+              <h1 className="text-xl font-bold">{t('custest.title')}</h1>
+              <p className="text-indigo-100 text-sm mt-0.5">{t('custest.sub')}</p>
             </div>
           </div>
         </div>
@@ -203,42 +199,44 @@ export default function CustomerEstimator() {
           className="w-full flex items-center justify-between bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-left">
           <div className="flex items-center gap-2 text-blue-700 text-sm font-medium">
             <Info className="w-4 h-4 shrink-0" />
-            Yeh estimate kaise calculate hota hai?
+            {t('custest.infoBtn')}
           </div>
           {showInfo ? <ChevronUp className="w-4 h-4 text-blue-400" /> : <ChevronDown className="w-4 h-4 text-blue-400" />}
         </button>
         {showInfo && (
           <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-sm text-blue-800 space-y-1.5 -mt-2">
-            <p>Standard construction norms ke basis pe calculate kiya jaata hai (BIS standards).</p>
-            <p>Yeh <strong>rough estimate</strong> hai — actual quantity ±15% vary kar sakti hai depending on design, wastage, aur local methods.</p>
-            <p>Hamesha engineer se confirm karein.</p>
+            <p>{t('custest.infoNote1')}</p>
+            <p>{t('custest.infoNote2')}</p>
+            <p>{t('custest.infoNote3')}</p>
           </div>
         )}
 
         {/* Form */}
         <form onSubmit={calculate} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
-          <h2 className="font-bold text-gray-900">Project Details</h2>
+          <h2 className="font-bold text-gray-900">{t('custest.formTitle')}</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Total Area (Square Feet) *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custest.area')}</label>
               <input value={form.area} onChange={e => set('area', e.target.value)}
                 type="number" min="50" max="100000" required placeholder="1000"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Floors (Manzil) *</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custest.floors')}</label>
               <select value={form.floors} onChange={e => set('floors', e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                {[1,2,3,4,5].map(f => <option key={f} value={f}>{f} Floor{f>1?'s':''}</option>)}
+                {[1,2,3,4,5].map(f => (
+                  <option key={f} value={f}>{t('custest.floorOpt', { n: f, s: f > 1 ? 's' : '' })}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Project Type *</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('custest.projType')}</label>
             <div className="grid grid-cols-2 gap-2">
-              {PROJECT_TYPES.map(p => (
+              {projectTypes.map(p => (
                 <button key={p.id} type="button" onClick={() => set('projectType', p.id)}
                   className={`py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors text-left ${
                     form.projectType === p.id
@@ -252,9 +250,9 @@ export default function CustomerEstimator() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Construction Quality *</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('custest.quality')}</label>
             <div className="grid grid-cols-3 gap-2">
-              {QUALITY.map(q => (
+              {qualityOptions.map(q => (
                 <button key={q.id} type="button" onClick={() => set('quality', q.id)}
                   className={`py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors ${
                     form.quality === q.id
@@ -270,7 +268,7 @@ export default function CustomerEstimator() {
 
           <button type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-            <Calculator className="w-4 h-4" /> Estimate Karo
+            <Calculator className="w-4 h-4" /> {t('custest.calculate')}
           </button>
         </form>
 
@@ -279,9 +277,9 @@ export default function CustomerEstimator() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-gray-900">
-                Estimated Materials
+                {t('custest.estMaterials')}
                 <span className="text-sm font-normal text-gray-500 ml-2">
-                  {result.area.toLocaleString('en-IN')} sqft × {result.floors} floor{result.floors > 1 ? 's' : ''}
+                  {t('custest.sqftFloors', { area: result.area.toLocaleString('en-IN'), floors: result.floors, s: result.floors > 1 ? 's' : '' })}
                 </span>
               </h2>
             </div>
@@ -289,10 +287,10 @@ export default function CustomerEstimator() {
             {/* Total cost */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-indigo-700">Total Estimated Material Cost</p>
+                <p className="text-sm font-medium text-indigo-700">{t('custest.totalCost')}</p>
                 {hasLiveRates && (
                   <p className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
-                    <Zap className="w-3 h-3" /> Live market rates use ho rahe hain
+                    <Zap className="w-3 h-3" /> {t('custest.liveRates')}
                   </p>
                 )}
               </div>
@@ -301,9 +299,7 @@ export default function CustomerEstimator() {
               </p>
             </div>
 
-            <p className="text-xs text-gray-400 px-1">
-              "Quote" button dabao → supplier se us material ki price compare karo
-            </p>
+            <p className="text-xs text-gray-400 px-1">{t('custest.quoteNote')}</p>
 
             <div className="space-y-2">
               {result.items.map(item => (
@@ -325,7 +321,7 @@ export default function CustomerEstimator() {
                 });
               }}
               className="w-full flex items-center justify-center gap-2 border-2 border-orange-400 text-orange-600 hover:bg-orange-50 font-bold py-3 rounded-2xl transition-colors text-sm">
-              <Plus className="w-4 h-4" /> Sab Materials ke liye Quote Request Banao
+              <Plus className="w-4 h-4" /> {t('custest.quoteAll')}
             </button>
           </div>
         )}

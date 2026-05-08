@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { HardHat, Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const CATEGORIES = [
   { value: 'basic_materials', label: 'Basic Materials (Cement, Sand, Bricks)' },
@@ -27,6 +28,7 @@ const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ou
 
 export default function SupplierRegister() {
   const navigate = useNavigate();
+  const t = useT();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -66,12 +68,10 @@ export default function SupplierRegister() {
         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-emerald-500" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Registration Submitted!</h2>
-        <p className="text-gray-500 text-sm mb-6">
-          Aapki application admin ke paas bhej di gayi hai. 24-48 ghante mein review hogi. Approve hone ke baad aap login kar sakte hain.
-        </p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">{t('auth.suppReg.done.title')}</h2>
+        <p className="text-gray-500 text-sm mb-6">{t('auth.suppReg.done.sub')}</p>
         <Link to="/supplier/login" className="block w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
-          Login Page par Jao
+          {t('auth.suppReg.loginBtn')}
         </Link>
       </div>
     </div>
@@ -88,8 +88,8 @@ export default function SupplierRegister() {
             </div>
             <span className="text-xl font-black text-gray-900">Nirman Setu</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Supplier Registration</h1>
-          <p className="text-gray-500 text-sm mt-1">Hamare network mein shamil ho — Admin approval ke baad login milega</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('auth.supp.reg.title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('suppReg.network')} — {t('suppReg.adminApproval')}</p>
         </div>
 
         {/* Progress */}
@@ -102,25 +102,25 @@ export default function SupplierRegister() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           {step === 1 ? (
             <div className="space-y-4">
-              <h2 className="font-bold text-gray-800 mb-4">Step 1 — Basic Info</h2>
+              <h2 className="font-bold text-gray-800 mb-4">{t('suppReg.step1')}</h2>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Aapka Naam *</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('suppReg.yourName')} *</label>
                 <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Ramesh Kumar" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Phone Number *</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('auth.phone')} *</label>
                 <input className={inp} type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="9876543210" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Email (optional)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('auth.email')} ({t('common.optional')})</label>
                 <input className={inp} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="ramesh@example.com" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Business Name (optional)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('suppReg.businessName')} ({t('common.optional')})</label>
                 <input className={inp} value={form.businessName} onChange={e => set('businessName', e.target.value)} placeholder="Ramesh Cement Store" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Password *</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('auth.password')} *</label>
                 <div className="relative">
                   <input className={inp} type={showPass ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 6 characters" />
                   <button type="button" onClick={() => setShowPass(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -132,14 +132,14 @@ export default function SupplierRegister() {
                 if (!form.name || !form.phone || !form.password) { toast.error('Sabhi zaroori fields bharo'); return; }
                 setStep(2);
               }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
-                Aage Badho →
+                {t('suppReg.nextBtn')}
               </button>
             </div>
           ) : (
             <div className="space-y-4">
-              <h2 className="font-bold text-gray-800 mb-4">Step 2 — Services & Area</h2>
+              <h2 className="font-bold text-gray-800 mb-4">{t('suppReg.step2')}</h2>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-2">Aap kya supply karte ho? * (ek ya zyada choose karo)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-2">{t('suppReg.supplyWhat')} *</label>
                 <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
                   {CATEGORIES.map(c => (
                     <label key={c.value} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
@@ -152,16 +152,16 @@ export default function SupplierRegister() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Service Areas (cities, comma separated)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('suppReg.serviceAreas')}</label>
                 <input className={inp} value={form.serviceAreas} onChange={e => set('serviceAreas', e.target.value)} placeholder="Ranchi, Dhanbad, Bokaro" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button onClick={() => setStep(1)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl text-sm font-medium hover:bg-gray-50">
-                  ← Wapas
+                  {t('suppReg.backBtn')}
                 </button>
                 <button onClick={handleSubmit} disabled={submitting}
                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Submit Registration'}
+                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('auth.suppReg.submitting')}</> : t('auth.suppReg.btn')}
                 </button>
               </div>
             </div>
@@ -169,8 +169,8 @@ export default function SupplierRegister() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          Pehle se account hai?{' '}
-          <Link to="/supplier/login" className="text-emerald-600 font-medium hover:underline">Login karo</Link>
+          {t('suppReg.haveAccount')}{' '}
+          <Link to="/supplier/login" className="text-emerald-600 font-medium hover:underline">{t('suppReg.loginLink')}</Link>
         </p>
       </div>
     </div>

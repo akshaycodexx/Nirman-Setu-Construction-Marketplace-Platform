@@ -7,6 +7,7 @@ import {
   Search, Send, X, ChevronDown, ChevronUp, CheckCircle, Loader2,
   Package, MessageSquare, Clock, IndianRupee, ArrowRight,
 } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const UNIT_LABEL = { ton: 'Ton', bag: 'Bag', piece: 'Piece', truck: 'Truck', cubic_meter: 'Cubic Meter', kg: 'KG', litre: 'Litre', sqft: 'Sq.Ft' };
 
@@ -20,6 +21,7 @@ const QUOTE_STATUS_STYLE = {
 
 function SubmitQuoteModal({ request, onDone, onClose }) {
   const { getAuthHeaders } = useSupplier();
+  const t = useT();
   const [form, setForm] = useState({ pricePerUnit: '', deliveryDays: '', notes: '' });
   const [saving, setSaving] = useState(false);
 
@@ -35,10 +37,10 @@ function SubmitQuoteModal({ request, onDone, onClose }) {
         deliveryDays: Number(form.deliveryDays),
         notes: form.notes,
       }, { headers: getAuthHeaders() });
-      toast.success('Quote bhej diya!');
+      toast.success(t('suppqr.quoteSent'));
       onDone();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error aaya');
+      toast.error(err.response?.data?.message || t('suppqr.loadFail'));
     } finally {
       setSaving(false);
     }
@@ -49,7 +51,7 @@ function SubmitQuoteModal({ request, onDone, onClose }) {
       <div className="bg-white rounded-2xl w-full max-w-sm">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h2 className="font-bold text-gray-900">Quote Submit Karo</h2>
+            <h2 className="font-bold text-gray-900">{t('suppqr.form.title')}</h2>
             <p className="text-xs text-gray-500 mt-0.5">{request.material} · {request.quantity} {UNIT_LABEL[request.unit]}</p>
           </div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
@@ -57,33 +59,33 @@ function SubmitQuoteModal({ request, onDone, onClose }) {
         <form onSubmit={submit} className="p-5 space-y-4">
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
-              Price per {UNIT_LABEL[request.unit]} (₹) *
+              {t('suppqr.form.priceLabel', { unit: UNIT_LABEL[request.unit] || request.unit })}
             </label>
             <input value={form.pricePerUnit} onChange={e => set('pricePerUnit', e.target.value)}
               type="number" min="1" required placeholder="1000"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             {totalPreview && (
               <p className="text-xs text-emerald-600 font-semibold mt-1">
-                Total: ₹{totalPreview}
+                {t('suppqr.form.totalPreview', { amount: totalPreview })}
               </p>
             )}
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Delivery mein kitne din? *</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('suppqr.form.days')}</label>
             <input value={form.deliveryDays} onChange={e => set('deliveryDays', e.target.value)}
               type="number" min="1" required placeholder="2"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Notes (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('suppqr.form.notes')}</label>
             <input value={form.notes} onChange={e => set('notes', e.target.value)}
-              placeholder="Grade, payment terms..."
+              placeholder={t('suppqr.form.notesPh')}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <button type="submit" disabled={saving}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Quote Bhejo
+            {t('suppqr.form.submit')}
           </button>
         </form>
       </div>
@@ -93,13 +95,14 @@ function SubmitQuoteModal({ request, onDone, onClose }) {
 
 function CounterRespondModal({ quote, onDone, onClose }) {
   const { getAuthHeaders } = useSupplier();
+  const t = useT();
   const [action, setAction] = useState('accept');
   const [price, setPrice] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
-    if (action === 'counter' && (!price || Number(price) <= 0)) return toast.error('Valid price daalo');
+    if (action === 'counter' && (!price || Number(price) <= 0)) return toast.error(t('suppqr.validPrice'));
     setSaving(true);
     try {
       await axios.post(`/api/quotes/${quote.quoteId}/counter-respond`, {
@@ -107,10 +110,14 @@ function CounterRespondModal({ quote, onDone, onClose }) {
         price: action === 'counter' ? Number(price) : undefined,
         note,
       }, { headers: getAuthHeaders() });
-      toast.success(action === 'accept' ? 'Counter accept kiya!' : action === 'reject' ? 'Reject kar diya' : 'Counter bheja!');
+      toast.success(
+        action === 'accept' ? t('suppqr.counterAccepted')
+        : action === 'reject' ? t('suppqr.rejected')
+        : t('suppqr.counterSent')
+      );
       onDone();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || t('suppqr.loadFail'));
     } finally {
       setSaving(false);
     }
@@ -120,11 +127,11 @@ function CounterRespondModal({ quote, onDone, onClose }) {
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-gray-900">Counter ka Jawab Do</h3>
+          <h3 className="font-bold text-gray-900">{t('suppqr.resp.title')}</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <p className="text-sm text-gray-500">
-          Customer ne counter kiya: <strong>₹{quote.currentPrice?.toLocaleString('en-IN')}</strong>
+          {t('suppqr.resp.customer')} <strong>₹{quote.currentPrice?.toLocaleString('en-IN')}</strong>
         </p>
         <div className="grid grid-cols-3 gap-2">
           {['accept', 'counter', 'reject'].map(a => (
@@ -134,22 +141,22 @@ function CounterRespondModal({ quote, onDone, onClose }) {
                   : a === 'reject' ? 'bg-red-500 text-white border-red-500'
                   : 'bg-orange-500 text-white border-orange-500'
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-              {a === 'accept' ? 'Accept' : a === 'counter' ? 'Counter' : 'Reject'}
+              {a === 'accept' ? t('suppqr.resp.accept') : a === 'counter' ? t('suppqr.resp.counter') : t('suppqr.resp.reject')}
             </button>
           ))}
         </div>
         {action === 'counter' && (
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Aapka Counter Price (₹)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('suppqr.resp.yourCounter')}</label>
             <input value={price} onChange={e => setPrice(e.target.value)} type="number" min="1"
-              placeholder="Apna price daalo"
+              placeholder={t('suppqr.resp.counterPricePh')}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
         )}
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Note (optional)</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t('suppqr.resp.note')}</label>
           <input value={note} onChange={e => setNote(e.target.value)}
-            placeholder="Kuch batana ho to..."
+            placeholder={t('suppqr.resp.notePh')}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         </div>
         <button onClick={submit} disabled={saving}
@@ -157,7 +164,7 @@ function CounterRespondModal({ quote, onDone, onClose }) {
             action === 'accept' ? 'bg-green-500 hover:bg-green-600' : action === 'reject' ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'
           }`}>
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-          {action === 'accept' ? 'Accept Karo' : action === 'reject' ? 'Reject Karo' : 'Counter Bhejo'}
+          {action === 'accept' ? t('suppqr.resp.acceptKaro') : action === 'reject' ? t('suppqr.resp.rejectKaro') : t('suppqr.resp.counterBhejo')}
         </button>
       </div>
     </div>
@@ -165,6 +172,7 @@ function CounterRespondModal({ quote, onDone, onClose }) {
 }
 
 function AvailableRequestCard({ request, onQuoted }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const expiresIn = Math.max(0, Math.floor((new Date(request.expiresAt) - Date.now()) / (1000 * 60 * 60)));
@@ -183,16 +191,16 @@ function AvailableRequestCard({ request, onQuoted }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900">{request.material}</span>
               {request.alreadyQuoted && (
-                <span className="text-xs font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Quoted</span>
+                <span className="text-xs font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{t('suppqr.quoted')}</span>
               )}
-              <span className="text-xs text-gray-400">{expiresIn}h baki</span>
+              <span className="text-xs text-gray-400">{t('suppqr.hBaki', { h: expiresIn })}</span>
             </div>
             <p className="text-sm text-gray-500">
               {request.quantity} {UNIT_LABEL[request.unit] || request.unit} · {request.city}
-              {request.budget && ` · Budget: ₹${request.budget.toLocaleString('en-IN')}`}
+              {request.budget && ` · ${t('suppqr.budget', { amount: request.budget.toLocaleString('en-IN') })}`}
             </p>
             <p className="text-xs text-gray-400">
-              Chahiye: {new Date(request.requiredBy).toLocaleDateString('en-IN')}
+              {t('suppqr.chahiye')} {new Date(request.requiredBy).toLocaleDateString('en-IN')}
             </p>
           </div>
           {expanded ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-1" />}
@@ -207,11 +215,11 @@ function AvailableRequestCard({ request, onQuoted }) {
             {!request.alreadyQuoted ? (
               <button onClick={() => setQuoteOpen(true)}
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
-                <Send className="w-4 h-4" /> Quote Do
+                <Send className="w-4 h-4" /> {t('suppqr.quoteDoBtn')}
               </button>
             ) : (
               <p className="text-sm text-emerald-600 font-semibold flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4" /> Aapne quote de diya hai
+                <CheckCircle className="w-4 h-4" /> {t('suppqr.quotedMsg')}
               </p>
             )}
           </div>
@@ -222,6 +230,7 @@ function AvailableRequestCard({ request, onQuoted }) {
 }
 
 function MyQuoteCard({ quote }) {
+  const t = useT();
   const [counterRespondOpen, setCounterRespondOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const request = quote.requestId;
@@ -240,13 +249,13 @@ function MyQuoteCard({ quote }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900">{request?.material}</span>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${QUOTE_STATUS_STYLE[quote.status] || 'bg-gray-100 text-gray-500'}`}>
-                {quote.status === 'countered' ? 'Counter Aaya!' : quote.status}
+                {quote.status === 'countered' ? t('suppqr.counterAaya') : quote.status}
               </span>
             </div>
             <p className="text-sm text-gray-500">
               {request?.quantity} {UNIT_LABEL[request?.unit] || request?.unit} · {request?.city}
             </p>
-            <p className="text-xs text-gray-400">Aapka quote: <span className="font-semibold text-gray-700">₹{quote.currentPrice?.toLocaleString('en-IN')}</span></p>
+            <p className="text-xs text-gray-400">{t('suppqr.yourQuote')} <span className="font-semibold text-gray-700">₹{quote.currentPrice?.toLocaleString('en-IN')}</span></p>
           </div>
           {expanded ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-1" />}
         </button>
@@ -255,10 +264,10 @@ function MyQuoteCard({ quote }) {
           <div className="px-5 pb-5 border-t border-gray-50 bg-white space-y-3">
             {quote.negotiation?.length > 0 && (
               <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 mt-3">
-                <p className="text-xs font-semibold text-gray-500">Negotiation</p>
+                <p className="text-xs font-semibold text-gray-500">{t('suppqr.negTitle')}</p>
                 {quote.negotiation.map((n, i) => (
                   <div key={i} className={`flex items-center gap-2 text-xs ${n.by === 'supplier' ? 'text-emerald-700' : 'text-blue-700'}`}>
-                    <span className="font-semibold capitalize">{n.by === 'supplier' ? 'Aap' : 'Customer'}:</span>
+                    <span className="font-semibold capitalize">{n.by === 'supplier' ? t('suppqr.aap') : t('suppqr.customer')}:</span>
                     <span>₹{n.price?.toLocaleString('en-IN')}</span>
                     {n.note && <span className="text-gray-400">— {n.note}</span>}
                   </div>
@@ -269,13 +278,13 @@ function MyQuoteCard({ quote }) {
             {quote.status === 'countered' && (
               <button onClick={() => setCounterRespondOpen(true)}
                 className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
-                <MessageSquare className="w-4 h-4" /> Counter ka Jawab Do
+                <MessageSquare className="w-4 h-4" /> {t('suppqr.counterRespond')}
               </button>
             )}
 
             {quote.status === 'accepted' && request?.convertedOrderId && (
               <p className="text-sm text-blue-600 font-semibold">
-                Order ban gaya: <span className="font-mono">{request.convertedOrderId}</span>
+                {t('suppqr.orderBanGaya')} <span className="font-mono">{request.convertedOrderId}</span>
               </p>
             )}
           </div>
@@ -287,6 +296,7 @@ function MyQuoteCard({ quote }) {
 
 export default function SupplierQuoteRequests() {
   const { getAuthHeaders } = useSupplier();
+  const t = useT();
   const [tab, setTab] = useState('available');
   const [available, setAvailable] = useState([]);
   const [myQuotes, setMyQuotes] = useState([]);
@@ -308,7 +318,7 @@ export default function SupplierQuoteRequests() {
   const loadAll = () => {
     setLoading(true);
     Promise.all([loadAvailable(), loadMyQuotes()])
-      .catch(() => toast.error('Load nahi ho saka'))
+      .catch(() => toast.error(t('suppqr.loadFail')))
       .finally(() => setLoading(false));
   };
 
@@ -335,20 +345,18 @@ export default function SupplierQuoteRequests() {
     <SupplierLayout>
       <div className="max-w-2xl mx-auto space-y-5">
 
-        {/* Header */}
         <div className="bg-linear-to-r from-emerald-600 to-teal-600 rounded-2xl p-5 text-white">
-          <h1 className="text-xl font-bold">Quote Requests</h1>
-          <p className="text-emerald-100 text-sm mt-0.5">Customers ke material requests — apna best price do.</p>
+          <h1 className="text-xl font-bold">{t('suppqr.title')}</h1>
+          <p className="text-emerald-100 text-sm mt-0.5">{t('suppqr.sub')}</p>
           {pendingCounter > 0 && (
             <div className="mt-3 inline-flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl text-sm font-semibold">
-              <MessageSquare className="w-4 h-4" /> {pendingCounter} counter ka jawab pending hai
+              <MessageSquare className="w-4 h-4" /> {t('suppqr.pendingCounter', { n: pendingCounter })}
             </div>
           )}
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-gray-100 rounded-2xl p-1">
-          {[['available', 'Available Requests'], ['my', 'Mere Quotes']].map(([key, label]) => (
+          {[['available', t('suppqr.available')], ['my', t('suppqr.myQuotes')]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-colors ${tab === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               {label}
@@ -362,7 +370,7 @@ export default function SupplierQuoteRequests() {
         {tab === 'available' && (
           <form onSubmit={handleCitySearch} className="flex gap-2">
             <input value={city} onChange={e => setCity(e.target.value)}
-              placeholder="City se filter karo..."
+              placeholder={t('suppqr.cityFilter')}
               className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             <button type="submit"
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl">
@@ -373,7 +381,7 @@ export default function SupplierQuoteRequests() {
 
         {tab === 'available' && (
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Material search karo..."
+            placeholder={t('suppqr.materialSearch')}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         )}
 
@@ -385,8 +393,8 @@ export default function SupplierQuoteRequests() {
           filteredAvailable.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-2xl border border-gray-100">
               <Package className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">Abhi koi open request nahi</p>
-              <p className="text-gray-400 text-sm mt-1">Jab customer request dega, yahan dikhega</p>
+              <p className="text-gray-500 font-medium">{t('suppqr.noAvailable')}</p>
+              <p className="text-gray-400 text-sm mt-1">{t('suppqr.noAvailableSub')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -399,11 +407,11 @@ export default function SupplierQuoteRequests() {
           myQuotes.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-2xl border border-gray-100">
               <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">Aapne abhi koi quote nahi diya</p>
-              <p className="text-gray-400 text-sm mt-1">Available tab mein requests dekho</p>
+              <p className="text-gray-500 font-medium">{t('suppqr.noMyQuotes')}</p>
+              <p className="text-gray-400 text-sm mt-1">{t('suppqr.noMyQuotesSub')}</p>
               <button onClick={() => setTab('available')}
                 className="mt-4 inline-flex items-center gap-2 text-emerald-600 text-sm font-semibold hover:text-emerald-700">
-                Requests dekho <ArrowRight className="w-4 h-4" />
+                {t('suppqr.reqsDekho')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ) : (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AdminLayout from '../../components/AdminLayout';
 import { TrendingUp, BarChart2, MapPin, Award, IndianRupee, Package, BadgeIndianRupee, Sparkles } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -36,6 +37,7 @@ function BarChart({ data, valueKey, labelKey, color = 'bg-orange-500', prefix = 
 }
 
 export default function AdminAnalytics() {
+  const t = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,9 +67,9 @@ export default function AdminAnalytics() {
     <AdminLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <TrendingUp className="w-6 h-6 text-orange-500" /> Analytics
+          <TrendingUp className="w-6 h-6 text-orange-500" /> {t('admin.nav.analytics')}
         </h1>
-        <p className="text-gray-500 text-sm mt-0.5">Revenue trends, category breakdown, city stats</p>
+        <p className="text-gray-500 text-sm mt-0.5">{t('admin.analytics.sub')}</p>
       </div>
 
       {/* KPI cards */}
@@ -95,7 +97,7 @@ export default function AdminAnalytics() {
         {/* Monthly Orders Chart */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-orange-500" /> Monthly Orders
+            <BarChart2 className="w-4 h-4 text-orange-500" /> {t('admin.analytics.monthlyOrders')}
           </h2>
           <p className="text-xs text-gray-400 mb-3">Last 6 months — hover for value</p>
           {loading ? (
@@ -110,7 +112,7 @@ export default function AdminAnalytics() {
         {/* Monthly Revenue Chart */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <IndianRupee className="w-4 h-4 text-green-500" /> Monthly Revenue
+            <IndianRupee className="w-4 h-4 text-green-500" /> {t('admin.analytics.monthlyRevenue')}
           </h2>
           <p className="text-xs text-gray-400 mb-3">Advance collected — hover for value</p>
           {loading ? (
@@ -127,7 +129,7 @@ export default function AdminAnalytics() {
         {/* Category Breakdown */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4 text-orange-500" /> Category Breakdown
+            <Package className="w-4 h-4 text-orange-500" /> {t('admin.analytics.categoryBreakdown')}
           </h2>
           {loading ? (
             <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-50 animate-pulse rounded-lg" />)}</div>
@@ -160,7 +162,7 @@ export default function AdminAnalytics() {
         {/* City Breakdown */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-orange-500" /> Top Cities
+            <MapPin className="w-4 h-4 text-orange-500" /> {t('admin.analytics.topCities')}
           </h2>
           {loading ? (
             <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-50 animate-pulse rounded-lg" />)}</div>
@@ -193,7 +195,7 @@ export default function AdminAnalytics() {
       {/* Top Suppliers */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Award className="w-4 h-4 text-orange-500" /> Top Suppliers (by Delivered Orders)
+          <Award className="w-4 h-4 text-orange-500" /> {t('admin.analytics.topSuppliers')}
         </h2>
         {loading ? (
           <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-gray-50 animate-pulse rounded-xl" />)}</div>

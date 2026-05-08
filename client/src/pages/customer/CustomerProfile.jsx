@@ -3,10 +3,14 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useCustomer } from '../../context/CustomerContext';
 import CustomerLayout from '../../components/CustomerLayout';
-import { User, Loader2, CheckCircle, Lock } from 'lucide-react';
+import { User, Loader2, CheckCircle, Lock, Globe } from 'lucide-react';
+import useT from '../../i18n/useT';
+import { useLang, LANGUAGES } from '../../context/LanguageContext';
 
 export default function CustomerProfile() {
   const { customer, loginCustomer, authHeader } = useCustomer();
+  const t = useT();
+  const { lang, changeLang } = useLang();
   const [form, setForm] = useState({
     name: customer?.name || '',
     email: customer?.email || '',
@@ -38,9 +42,9 @@ export default function CustomerProfile() {
       const token = localStorage.getItem('customerToken');
       loginCustomer(token, { _id: data._id, name: data.name, phone: data.phone, email: data.email });
       setSaved(true);
-      toast.success('Profile updated!');
+      toast.success(t('custprofile.saved'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
+      toast.error(err.response?.data?.message || t('custprofile.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -48,17 +52,17 @@ export default function CustomerProfile() {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirm) { toast.error('Passwords do not match'); return; }
+    if (pwForm.newPassword !== pwForm.confirm) { toast.error(t('custprofile.pwMismatch')); return; }
     setPwSaving(true);
     try {
       await axios.patch('/api/customer/change-password', {
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
       }, { headers: authHeader() });
-      toast.success('Password changed successfully!');
+      toast.success(t('custprofile.pwChanged'));
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Password change failed');
+      toast.error(err.response?.data?.message || t('custprofile.pwFailed'));
     } finally {
       setPwSaving(false);
     }
@@ -74,36 +78,36 @@ export default function CustomerProfile() {
             <User className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">My Profile</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t('custprofile.title')}</h1>
             <p className="text-gray-500 text-sm">{customer?.phone}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Full Name</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('custprofile.fullName')}</label>
             <input type="text" required value={form.name} onChange={set('name')} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('auth.email')}</label>
             <input type="email" value={form.email} onChange={set('email')} placeholder="your@email.com" className={inputCls} />
           </div>
 
           <hr className="border-gray-100" />
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Default Delivery Address</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('custprofile.deliveryAddr')}</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">City</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('req.del.city')}</label>
               <input type="text" value={form.city} onChange={set('city')} placeholder="Patna" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">Pincode</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('req.del.pincode')}</label>
               <input type="text" value={form.pincode} onChange={set('pincode')} placeholder="800001" className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Area / Locality</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('custprofile.area')}</label>
             <input type="text" value={form.area} onChange={set('area')} placeholder="Gandhi Maidan, Near XYZ" className={inputCls} />
           </div>
 
@@ -113,11 +117,11 @@ export default function CustomerProfile() {
             className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
           >
             {saving ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+              <><Loader2 className="w-4 h-4 animate-spin" /> {t('custprofile.saving')}</>
             ) : saved ? (
-              <><CheckCircle className="w-4 h-4" /> Saved!</>
+              <><CheckCircle className="w-4 h-4" /> {t('custprofile.savedBtn')}</>
             ) : (
-              'Save Changes'
+              t('custprofile.saveChanges')
             )}
           </button>
         </form>
@@ -126,48 +130,74 @@ export default function CustomerProfile() {
         <form onSubmit={handlePasswordChange} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <Lock className="w-4 h-4 text-gray-400" />
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Change Password</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('custprofile.changePw')}</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Current Password</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('custprofile.currentPw')}</label>
             <input type="password" value={pwForm.currentPassword} required
               onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
               className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">New Password</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('custprofile.newPw')}</label>
             <input type="password" value={pwForm.newPassword} required minLength={6}
               onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
               placeholder="Min 6 characters"
               className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Confirm New Password</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('custprofile.confirmPw')}</label>
             <input type="password" value={pwForm.confirm} required
               onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
               className={inputCls} />
           </div>
           <button type="submit" disabled={pwSaving}
             className="w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-            {pwSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</> : <><Lock className="w-4 h-4" /> Update Password</>}
+            {pwSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('custprofile.updating')}</> : <><Lock className="w-4 h-4" /> {t('custprofile.updatePw')}</>}
           </button>
         </form>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Account Info</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t('custprofile.accountInfo')}</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Phone</span>
+              <span className="text-gray-500">{t('custprofile.phone')}</span>
               <span className="font-medium text-gray-900">{customer?.phone}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Member since</span>
+              <span className="text-gray-500">{t('custprofile.memberSince')}</span>
               <span className="font-medium text-gray-900">
                 {customer?.createdAt
                   ? new Date(customer.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
                   : '—'}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Language Settings */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Globe className="w-4 h-4 text-gray-400" />
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('lang.settings')}</p>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">{t('lang.choose')}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {LANGUAGES.map(l => (
+              <button
+                key={l.code}
+                onClick={() => changeLang(l.code)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                  lang === l.code
+                    ? 'bg-blue-50 border-blue-400 text-blue-700'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-base">{l.flag}</span>
+                <span>{l.native}</span>
+                {lang === l.code && <span className="ml-auto w-2 h-2 rounded-full bg-blue-500" />}
+              </button>
+            ))}
           </div>
         </div>
       </div>

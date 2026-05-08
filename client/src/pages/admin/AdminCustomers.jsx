@@ -3,6 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { Users, Search, ShieldAlert, ShieldCheck, ShieldX, ToggleLeft, ToggleRight, Package, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import useT from '../../i18n/useT';
 
 const RISK_CONFIG = {
   green:  { label: 'Trusted',   cls: 'bg-green-100 text-green-700',  icon: ShieldCheck },
@@ -17,6 +18,7 @@ const RISK_BORDER = {
 };
 
 export default function AdminCustomers() {
+  const t = useT();
   const [customers, setCustomers] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function AdminCustomers() {
       const { data } = await axios.get(`/api/admin/customers?${q}`);
       setCustomers(data.customers);
       setTotal(data.total);
-    } catch { toast.error('Failed to load customers'); }
+    } catch { toast.error(t('admin.customers.loadFailed')); }
     setLoading(false);
   }, [search, riskFilter, page]);
 
@@ -45,8 +47,8 @@ export default function AdminCustomers() {
     try {
       const { data } = await axios.put(`/api/admin/customers/${id}/block`, { isActive });
       setCustomers(prev => prev.map(c => c._id === id ? { ...c, isActive: data.customer.isActive } : c));
-      toast.success(isActive ? 'Customer unblocked' : 'Customer blocked');
-    } catch { toast.error('Action failed'); }
+      toast.success(isActive ? t('admin.customers.unblocked') : t('admin.customers.blocked'));
+    } catch { toast.error(t('admin.common.actionFailed')); }
   };
 
   return (
@@ -54,9 +56,9 @@ export default function AdminCustomers() {
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" /> Customers
+            <Users className="w-6 h-6 text-orange-500" /> {t('admin.nav.customers')}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">{total} registered customers</p>
+          <p className="text-gray-500 text-sm mt-0.5">{t('admin.customers.registered', { n: total })}</p>
         </div>
         <button onClick={fetchCustomers} className="text-gray-500 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100">
           <RefreshCw className="w-4 h-4" />
@@ -72,13 +74,13 @@ export default function AdminCustomers() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && fetchCustomers()}
-            placeholder="Search by name or phone..."
+            placeholder={t('admin.customers.searchPh')}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
-            <ShieldAlert className="w-3.5 h-3.5" /> Risk:
+            <ShieldAlert className="w-3.5 h-3.5" /> {t('admin.common.risk')}:
           </span>
           {['all', 'green', 'yellow', 'red'].map(r => (
             <button
@@ -93,7 +95,7 @@ export default function AdminCustomers() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {r === 'all' ? 'All' : RISK_CONFIG[r]?.label}
+              {r === 'all' ? t('admin.common.all') : t(`admin.risk.${r}`)}
             </button>
           ))}
         </div>
@@ -106,7 +108,7 @@ export default function AdminCustomers() {
         ) : customers.length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Koi customer nahi mila</p>
+            <p>{t('admin.customers.empty')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -120,10 +122,10 @@ export default function AdminCustomers() {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-semibold text-gray-900">{c.name}</span>
                         <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${risk.cls}`}>
-                          <RiskIcon className="w-3 h-3" /> {risk.label}
+                          <RiskIcon className="w-3 h-3" /> {t(`admin.risk.${c.riskLevel || 'green'}`)}
                         </span>
                         {!c.isActive && (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">Blocked</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">{t('admin.customers.blockedLabel')}</span>
                         )}
                       </div>
                       <p className="text-sm text-gray-500">{c.phone}{c.email && ` · ${c.email}`}</p>
@@ -132,20 +134,20 @@ export default function AdminCustomers() {
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Package className="w-3.5 h-3.5 text-gray-400" />
-                          <span>{c.orderStats?.total ?? 0} orders</span>
+                          <span>{t('admin.common.ordersCount', { n: c.orderStats?.total ?? 0 })}</span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-green-600">
                           <CheckCircle className="w-3.5 h-3.5" />
-                          <span>{c.orderStats?.delivered ?? 0} delivered</span>
+                          <span>{t('admin.common.deliveredCount', { n: c.orderStats?.delivered ?? 0 })}</span>
                         </div>
                         {c.cancelCount > 0 && (
                           <div className="flex items-center gap-1 text-xs text-red-500">
                             <XCircle className="w-3.5 h-3.5" />
-                            <span>{c.cancelCount} cancelled</span>
+                            <span>{t('admin.common.cancelledCount', { n: c.cancelCount })}</span>
                           </div>
                         )}
                         <span className="text-xs text-gray-400">
-                          Joined {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {t('admin.common.joined')} {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
 
@@ -171,8 +173,8 @@ export default function AdminCustomers() {
                       }`}
                     >
                       {c.isActive
-                        ? <><ToggleRight className="w-4 h-4" /> Block</>
-                        : <><ToggleLeft className="w-4 h-4" /> Unblock</>}
+                        ? <><ToggleRight className="w-4 h-4" /> {t('admin.customers.block')}</>
+                        : <><ToggleLeft className="w-4 h-4" /> {t('admin.customers.unblock')}</>}
                     </button>
                   </div>
                 </div>
@@ -185,12 +187,12 @@ export default function AdminCustomers() {
       {/* Pagination */}
       {total > 20 && (
         <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-          <span>Page {page} of {Math.ceil(total / 20)}</span>
+          <span>{t('admin.common.pageOf', { page, total: Math.ceil(total / 20) })}</span>
           <div className="flex gap-2">
             <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50">Prev</button>
+              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50">{t('admin.common.prev')}</button>
             <button disabled={page >= Math.ceil(total / 20)} onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50">Next</button>
+              className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 disabled:opacity-40 hover:bg-gray-50">{t('common.next')}</button>
           </div>
         </div>
       )}

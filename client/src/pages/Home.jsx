@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { useCustomer } from '../context/CustomerContext';
 import { useSupplier } from '../context/SupplierContext';
+import useT from '../i18n/useT';
 import {
   Package, Shield, Clock, Star, HardHat,
   ArrowRight, CheckCircle, ChevronRight,
@@ -22,24 +23,24 @@ const categories = [
   { icon: '🚛', name: 'Truck / Dumper', desc: 'Material transport', tag: 'transport' },
 ];
 
-const stats = [
-  { value: '500+', label: 'Orders Delivered', icon: '📦' },
-  { value: '50+', label: 'Verified Suppliers', icon: '✅' },
-  { value: '98%', label: 'On-Time Delivery', icon: '⚡' },
-  { value: '4.8★', label: 'Customer Rating', icon: '⭐' },
+const STATS_KEYS = [
+  { value: '500+', labelKey: 'home.stats.orders', icon: '📦' },
+  { value: '50+', labelKey: 'home.stats.suppliers', icon: '✅' },
+  { value: '98%', labelKey: 'home.stats.ontime', icon: '⚡' },
+  { value: '4.8★', labelKey: 'home.stats.rating', icon: '⭐' },
 ];
 
-const steps = [
-  { num: '01', title: 'Request Submit Karo', desc: 'Kya chahiye, kitna chahiye, kahan chahiye — simple form me batao.' },
-  { num: '02', title: 'Best Quote Pao', desc: 'Verified suppliers se 2 ghante me best price quote milega.' },
-  { num: '03', title: 'Confirm & Delivery', desc: 'Quote accept karo, advance do — hum delivery guarantee karte hain.' },
+const STEPS_KEYS = [
+  { num: '01', titleKey: 'home.step1.title', descKey: 'home.step1.desc' },
+  { num: '02', titleKey: 'home.step2.title', descKey: 'home.step2.desc' },
+  { num: '03', titleKey: 'home.step3.title', descKey: 'home.step3.desc' },
 ];
 
-const features = [
-  { icon: Shield, title: 'Verified Suppliers', desc: 'Har supplier KYC verified. Fake listing — zero tolerance.' },
-  { icon: Clock, title: 'Fast Response', desc: '2 ghante me quote. Same-day delivery bhi available.' },
-  { icon: Star, title: 'Best Price', desc: 'Direct supplier negotiation. Market se competitive rates.' },
-  { icon: CheckCircle, title: 'Delivery Guarantee', desc: 'Advance de ke delivery nahi aayi — full refund.' },
+const FEATURES_KEYS = [
+  { icon: Shield, titleKey: 'home.feat1.title', descKey: 'home.feat1.desc' },
+  { icon: Clock, titleKey: 'home.feat2.title', descKey: 'home.feat2.desc' },
+  { icon: Star, titleKey: 'home.feat3.title', descKey: 'home.feat3.desc' },
+  { icon: CheckCircle, titleKey: 'home.feat4.title', descKey: 'home.feat4.desc' },
 ];
 
 const CAT_EMOJI = {
@@ -50,9 +51,14 @@ const CAT_EMOJI = {
 export default function Home() {
   const { customer } = useCustomer();
   const { supplier } = useSupplier();
+  const t = useT();
   const [rates, setRates] = useState([]);
   const [ratesLoading, setRatesLoading] = useState(true);
   const [showAllRates, setShowAllRates] = useState(false);
+
+  const stats = STATS_KEYS.map(s => ({ ...s, label: t(s.labelKey) }));
+  const steps = STEPS_KEYS.map(s => ({ ...s, title: t(s.titleKey), desc: t(s.descKey) }));
+  const features = FEATURES_KEYS.map(f => ({ ...f, title: t(f.titleKey), desc: t(f.descKey) }));
 
   useEffect(() => {
     axios.get('/api/rates').then(r => setRates(r.data.rates || [])).catch(() => {}).finally(() => setRatesLoading(false));
@@ -75,35 +81,34 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/25 rounded-full px-4 py-1.5 text-orange-300 text-sm font-medium mb-6">
                 <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-                Jharkhand ka #1 Construction Platform
+                {t('home.badge')}
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-5">
-                Construction ka<br />
+                {t('home.heroTitle')}<br />
                 <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                  Bharosa — Ek Jagah
+                  {t('home.heroOrange')}
                 </span>
               </h1>
               <p className="text-gray-300 text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
-                Cement, balu, gitti, sariya, JCB — verified suppliers se best price pe.
-                Customer ya Supplier — dono ke liye ek poora platform.
+                {t('home.heroSub')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <Link to="/request"
                   className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3.5 rounded-xl transition-colors text-base shadow-xl shadow-orange-500/20">
-                  Free Quote Lo <ArrowRight className="w-5 h-5" />
+                  {t('home.cta1')} <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link to={supplier ? '/supplier/dashboard' : '/supplier/register'}
                   className="inline-flex items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 font-semibold px-7 py-3.5 rounded-xl transition-colors text-base">
                   <Package className="w-5 h-5" />
-                  {supplier ? 'Supplier Dashboard' : 'Supplier Bano — Free'}
+                  {supplier ? t('home.cta2SupplierDash') : t('home.cta2Supplier')}
                 </Link>
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> Free quote</span>
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> Verified suppliers</span>
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> No hidden charges</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> {t('home.trust1')}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> {t('home.trust2')}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> {t('home.trust3')}</span>
               </div>
             </div>
 
@@ -150,10 +155,10 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            Customer hain ya Supplier?
+            {t('home.portal.title')}
           </h2>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Nirman Setu dono ke liye bana hai — material chahiye walo ke liye bhi, aur supply karne walo ke liye bhi.
+            {t('home.portal.sub')}
           </p>
         </div>
 
@@ -164,18 +169,16 @@ export default function Home() {
               <HardHat className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1">
-              <div className="inline-block bg-blue-500/40 text-blue-100 text-xs font-bold px-3 py-1 rounded-full mb-3">For Customers</div>
-              <h3 className="text-2xl md:text-3xl font-extrabold mb-2">Material Chahiye?</h3>
-              <p className="text-blue-100 mb-6 leading-relaxed">
-                Apni construction site ke liye sab kuch yahan milega — quote, karigar, tracking, sab ek jagah.
-              </p>
+              <div className="inline-block bg-blue-500/40 text-blue-100 text-xs font-bold px-3 py-1 rounded-full mb-3">{t('home.cust.tag')}</div>
+              <h3 className="text-2xl md:text-3xl font-extrabold mb-2">{t('home.cust.title')}</h3>
+              <p className="text-blue-100 mb-6 leading-relaxed">{t('home.cust.sub')}</p>
               <ul className="space-y-2.5 mb-8">
                 {[
-                  'Free quote in 2 hours',
-                  'Multiple suppliers compare karo',
-                  'Karigar / labour book karo',
-                  'Order live track karo',
-                  'Project budget manage karo',
+                  t('home.cust.feat1'),
+                  t('home.cust.feat2'),
+                  t('home.cust.feat3'),
+                  t('home.cust.feat4'),
+                  t('home.cust.feat5'),
                 ].map(item => (
                   <li key={item} className="flex items-center gap-2.5 text-sm text-blue-100">
                     <CheckCircle className="w-4 h-4 text-blue-300 shrink-0" /> {item}
@@ -186,12 +189,12 @@ export default function Home() {
             <div className="space-y-2.5">
               <Link to={customer ? '/customer/dashboard' : '/customer/register'}
                 className="block bg-white text-blue-700 font-extrabold py-3.5 rounded-xl text-center text-sm hover:bg-blue-50 transition-colors">
-                {customer ? `Welcome back, ${customer.name.split(' ')[0]}! →` : 'Customer Register Karo — Free →'}
+                {customer ? t('home.cust.dashCta', { name: customer.name.split(' ')[0] }) : t('home.cust.regCta')}
               </Link>
               {!customer && (
                 <Link to="/customer/login"
                   className="block bg-white/10 border border-white/20 text-white font-medium py-3 rounded-xl text-center text-sm hover:bg-white/20 transition-colors">
-                  Already Customer? Login
+                  {t('home.cust.loginCta')}
                 </Link>
               )}
             </div>
@@ -203,18 +206,16 @@ export default function Home() {
               <Package className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1">
-              <div className="inline-block bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full mb-3">For Suppliers</div>
-              <h3 className="text-2xl md:text-3xl font-extrabold mb-2">Supply Karte Ho?</h3>
-              <p className="text-emerald-100 mb-6 leading-relaxed">
-                Cement, balu, sariya, JCB — jo bhi supply karte ho, register karo aur daily new order leads pao.
-              </p>
+              <div className="inline-block bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full mb-3">{t('home.supp.tag')}</div>
+              <h3 className="text-2xl md:text-3xl font-extrabold mb-2">{t('home.supp.title')}</h3>
+              <p className="text-emerald-100 mb-6 leading-relaxed">{t('home.supp.sub')}</p>
               <ul className="space-y-2.5 mb-8">
                 {[
-                  'Daily new order leads milenge',
-                  '100% payment guarantee',
-                  'Verified Supplier badge milega',
-                  'Earnings dashboard & analytics',
-                  'Bilkul free registration',
+                  t('home.supp.feat1'),
+                  t('home.supp.feat2'),
+                  t('home.supp.feat3'),
+                  t('home.supp.feat4'),
+                  t('home.supp.feat5'),
                 ].map(item => (
                   <li key={item} className="flex items-center gap-2.5 text-sm text-emerald-100">
                     <CheckCircle className="w-4 h-4 text-emerald-300 shrink-0" /> {item}
@@ -225,12 +226,12 @@ export default function Home() {
             <div className="space-y-2.5">
               <Link to={supplier ? '/supplier/dashboard' : '/supplier/register'}
                 className="block bg-white text-emerald-700 font-extrabold py-3.5 rounded-xl text-center text-sm hover:bg-emerald-50 transition-colors">
-                {supplier ? `Dashboard — ${supplier.name.split(' ')[0]} →` : 'Supplier Bano — Bilkul Free →'}
+                {supplier ? t('home.supp.dashCta', { name: supplier.name.split(' ')[0] }) : t('home.supp.regCta')}
               </Link>
               {!supplier && (
                 <Link to="/supplier/login"
                   className="block bg-white/10 border border-white/20 text-white font-medium py-3 rounded-xl text-center text-sm hover:bg-white/20 transition-colors">
-                  Already Supplier? Login
+                  {t('home.supp.loginCta')}
                 </Link>
               )}
             </div>
@@ -242,8 +243,8 @@ export default function Home() {
       <section id="categories" className="bg-gray-50 py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">Kya Chahiye Tumhe?</h2>
-            <p className="text-gray-500 text-lg max-w-xl mx-auto">Construction ke liye zaroori har cheez — ek jagah</p>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">{t('home.catTitle')}</h2>
+            <p className="text-gray-500 text-lg max-w-xl mx-auto">{t('home.catSub')}</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {categories.map(cat => (
@@ -253,7 +254,7 @@ export default function Home() {
                 <h3 className="font-bold text-gray-900 mb-1 group-hover:text-orange-600 transition-colors">{cat.name}</h3>
                 <p className="text-sm text-gray-500">{cat.desc}</p>
                 <div className="mt-3 flex items-center gap-1 text-orange-500 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                  Quote lo <ChevronRight className="w-4 h-4" />
+                  {t('home.catQuote')} <ChevronRight className="w-4 h-4" />
                 </div>
               </Link>
             ))}
@@ -261,7 +262,7 @@ export default function Home() {
           <div className="text-center mt-8">
             <Link to="/request"
               className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 font-semibold text-sm">
-              Aur categories dekho <ArrowRight className="w-4 h-4" />
+              {t('home.catMore')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -270,8 +271,8 @@ export default function Home() {
       {/* ─── HOW IT WORKS ─── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">Kaise Kaam Karta Hai?</h2>
-          <p className="text-gray-500 text-lg">Teen steps — aur material tumhare site pe</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">{t('home.howTitle')}</h2>
+          <p className="text-gray-500 text-lg">{t('home.howSub')}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
           <div className="hidden md:block absolute top-10 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-0.5 bg-gradient-to-r from-orange-200 via-orange-300 to-orange-200" />
@@ -291,8 +292,8 @@ export default function Home() {
       <section className="bg-gray-950 py-16 md:py-20 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-3">Kyun Nirman Setu?</h2>
-            <p className="text-gray-400 text-lg">Sirf connect nahi — hum guarantee karte hain</p>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-3">{t('home.whyTitle')}</h2>
+            <p className="text-gray-400 text-lg">{t('home.whySub')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {features.map(f => (
@@ -311,18 +312,18 @@ export default function Home() {
       {/* ─── NEW SERVICES ─── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">✨ Naye Features</div>
+          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">{t('home.services.badge')}</div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            Sirf Material Nahi — Poora Construction Manage Karo
+            {t('home.services.title')}
           </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto">Quote compare karo, karigar book karo, budget track karo — sab ek jagah</p>
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t('home.services.sub')}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {[
-            { icon: MessageSquare, color: 'bg-blue-500', ring: 'border-blue-100 hover:border-blue-200', accent: 'text-blue-600', title: 'Quote Compare', desc: 'Multiple suppliers ko ek sath RFQ bhejo — best price compare karo.', to: '/customer/quotes', cta: 'Quote Request Karo' },
-            { icon: Hammer, color: 'bg-amber-500', ring: 'border-amber-100 hover:border-amber-200', accent: 'text-amber-600', title: 'Karigar Booking', desc: 'Mason, plumber, electrician — verified karigars site pe book karo.', to: '/customer/labour', cta: 'Karigar Dhundo' },
-            { icon: Calculator, color: 'bg-green-500', ring: 'border-green-100 hover:border-green-200', accent: 'text-green-600', title: 'Material Estimator', desc: 'Area batao — cement, balu, gitti, sariya ka estimate milega.', to: '/customer/estimator', cta: 'Estimate Nikalo' },
-            { icon: FolderOpen, color: 'bg-indigo-500', ring: 'border-indigo-100 hover:border-indigo-200', accent: 'text-indigo-600', title: 'Project Tracker', desc: 'Ghar, dukan, factory — saare orders ek project mein track karo.', to: '/customer/projects', cta: 'Project Banao' },
+            { icon: MessageSquare, color: 'bg-blue-500', ring: 'border-blue-100 hover:border-blue-200', accent: 'text-blue-600', title: t('home.s1.title'), desc: t('home.s1.desc'), to: '/customer/quotes', cta: t('home.s1.cta') },
+            { icon: Hammer, color: 'bg-amber-500', ring: 'border-amber-100 hover:border-amber-200', accent: 'text-amber-600', title: t('home.s2.title'), desc: t('home.s2.desc'), to: '/customer/labour', cta: t('home.s2.cta') },
+            { icon: Calculator, color: 'bg-green-500', ring: 'border-green-100 hover:border-green-200', accent: 'text-green-600', title: t('home.s3.title'), desc: t('home.s3.desc'), to: '/customer/estimator', cta: t('home.s3.cta') },
+            { icon: FolderOpen, color: 'bg-indigo-500', ring: 'border-indigo-100 hover:border-indigo-200', accent: 'text-indigo-600', title: t('home.s4.title'), desc: t('home.s4.desc'), to: '/customer/projects', cta: t('home.s4.cta') },
           ].map(s => (
             <Link key={s.title} to={customer ? s.to : '/customer/register'}
               className={`group bg-white border ${s.ring} rounded-2xl p-6 flex flex-col hover:shadow-lg transition-all duration-200`}>
@@ -348,21 +349,21 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/25 rounded-full px-4 py-1.5 text-emerald-300 text-sm font-medium mb-6">
                 <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                50+ Suppliers Pehle Se Kama Rahe Hain
+                {t('home.join.badge')}
               </div>
               <h2 className="text-3xl md:text-4xl font-extrabold leading-tight mb-4">
-                Apna Business Online Lao,<br />
-                <span className="text-emerald-400">Zyada Orders Pao</span>
+                {t('home.join.title')}<br />
+                <span className="text-emerald-400">{t('home.join.orange')}</span>
               </h2>
               <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-                Cement, sand, sariya, JCB — jo bhi supply karte ho, listing karo aur daily new customers connect karo. Koi commission nahi — seedha deal.
+                {t('home.join.sub')}
               </p>
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {[
-                  { label: '₹50K–₹2L', sub: 'Monthly Potential' },
-                  { label: '100%', sub: 'Payment Guarantee' },
-                  { label: 'Verified', sub: 'Supplier Badge' },
-                  { label: 'Free', sub: 'Registration' },
+                  { label: t('home.join.earn1'), sub: t('home.join.earn1sub') },
+                  { label: t('home.join.earn2'), sub: t('home.join.earn2sub') },
+                  { label: t('home.join.earn3'), sub: t('home.join.earn3sub') },
+                  { label: t('home.join.earn4'), sub: t('home.join.earn4sub') },
                 ].map(s => (
                   <div key={s.label} className="bg-white/5 border border-white/8 rounded-xl p-4">
                     <p className="text-2xl font-extrabold text-emerald-400">{s.label}</p>
@@ -374,12 +375,12 @@ export default function Home() {
                 <Link to={supplier ? '/supplier/dashboard' : '/supplier/register'}
                   className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-7 py-3.5 rounded-xl transition-colors shadow-xl shadow-emerald-500/15">
                   <Package className="w-5 h-5" />
-                  {supplier ? 'Go to Dashboard' : 'Supplier Ban Jao — Free'}
+                  {supplier ? t('home.join.dashCta') : t('home.join.regCta')}
                 </Link>
                 {!supplier && (
                   <Link to="/supplier/login"
                     className="inline-flex items-center justify-center gap-2 bg-white/8 border border-white/15 hover:bg-white/15 text-white font-medium px-7 py-3.5 rounded-xl transition-colors">
-                    Existing Supplier Login
+                    {t('home.join.loginCta')}
                   </Link>
                 )}
               </div>
@@ -388,10 +389,10 @@ export default function Home() {
             {/* Right side — benefits visual */}
             <div className="space-y-4">
               {[
-                { icon: BadgeCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Verified Supplier Badge', desc: 'KYC ke baad badge milega — customers zyada trust karte hain.' },
-                { icon: IndianRupee, color: 'text-yellow-400', bg: 'bg-yellow-500/10', title: 'Fast Payments', desc: 'Delivery confirm hone ke 24 ghante ke andar payment settle.' },
-                { icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Analytics & Insights', desc: 'Dekho kitna kama rahe ho, konse material zyada bikta hai.' },
-                { icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10', title: 'Growing Network', desc: 'Har hafte naye customers — Jharkhand bhar mein reach badho.' },
+                { icon: BadgeCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: t('home.join.b1.title'), desc: t('home.join.b1.desc') },
+                { icon: IndianRupee, color: 'text-yellow-400', bg: 'bg-yellow-500/10', title: t('home.join.b2.title'), desc: t('home.join.b2.desc') },
+                { icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10', title: t('home.join.b3.title'), desc: t('home.join.b3.desc') },
+                { icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10', title: t('home.join.b4.title'), desc: t('home.join.b4.desc') },
               ].map(b => (
                 <div key={b.title} className="flex items-start gap-4 bg-white/4 border border-white/8 rounded-2xl p-5 hover:bg-white/7 transition-colors">
                   <div className={`w-10 h-10 ${b.bg} rounded-xl flex items-center justify-center shrink-0`}>
@@ -414,10 +415,10 @@ export default function Home() {
           <div className="flex items-start justify-between mb-8">
             <div>
               <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
-                <Zap className="w-3 h-3" /> Live Rates
+                <Zap className="w-3 h-3" /> {t('home.rates.badge')}
               </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Aaj ke Material Rates</h2>
-              <p className="text-gray-500 mt-1 text-sm">Jharkhand market ke current prices — order se pehle check karo</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{t('home.rates.title')}</h2>
+              <p className="text-gray-500 mt-1 text-sm">{t('home.rates.sub')}</p>
             </div>
             <TrendingUp className="w-10 h-10 text-green-400 hidden md:block mt-2" />
           </div>
@@ -449,11 +450,11 @@ export default function Home() {
                 <div className="text-center mt-6">
                   <button onClick={() => setShowAllRates(s => !s)}
                     className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-sm">
-                    {showAllRates ? 'Kam dikhao ↑' : `Aur ${rates.length - 8} rates dekho →`}
+                    {showAllRates ? t('home.rates.less') : t('home.rates.more', { n: rates.length - 8 })}
                   </button>
                 </div>
               )}
-              <p className="text-xs text-gray-400 text-center mt-4">* Indicative rates. Actual price quote confirm hone ke baad.</p>
+              <p className="text-xs text-gray-400 text-center mt-4">{t('home.rates.note')}</p>
             </>
           )}
         </section>
@@ -464,18 +465,16 @@ export default function Home() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle at 10% 90%, rgba(0,0,0,0.12) 0%, transparent 50%), radial-gradient(circle at 90% 10%, rgba(255,255,255,0.08) 0%, transparent 40%)' }} />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-3">Abhi Start Karo — Bilkul Free</h2>
-          <p className="text-orange-100 text-lg mb-8 max-w-xl mx-auto">
-            2 ghante me best quote milega. Zero commitment. Just connect karo.
-          </p>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-3">{t('home.cta.title')}</h2>
+          <p className="text-orange-100 text-lg mb-8 max-w-xl mx-auto">{t('home.cta.sub')}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/request"
               className="inline-flex items-center justify-center gap-2 bg-white text-orange-600 font-extrabold px-8 py-3.5 rounded-xl hover:bg-orange-50 transition-colors shadow-lg text-sm">
-              Free Quote Lo <ArrowRight className="w-5 h-5" />
+              {t('home.cta.btn1')} <ArrowRight className="w-5 h-5" />
             </Link>
             <Link to="/supplier/register"
               className="inline-flex items-center justify-center gap-2 bg-white/15 border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/25 transition-colors text-sm">
-              <Package className="w-4 h-4" /> Supplier Bano
+              <Package className="w-4 h-4" /> {t('home.cta.btn2')}
             </Link>
           </div>
         </div>

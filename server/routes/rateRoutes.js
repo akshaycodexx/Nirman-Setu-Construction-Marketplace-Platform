@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/rateController');
-const protect = require('../middleware/adminAuth');
+const { protect } = require('../middleware/auth');
 
 // Public
 router.get('/', ctrl.getRates);

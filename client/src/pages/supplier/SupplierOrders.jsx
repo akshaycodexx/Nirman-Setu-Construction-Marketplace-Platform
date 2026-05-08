@@ -3,9 +3,16 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SupplierLayout from '../../components/SupplierLayout';
 import { useSupplier } from '../../context/SupplierContext';
+import { useSocket } from '../../context/SocketContext';
 import { ClipboardList, ArrowRight, Package } from 'lucide-react';
+import useT from '../../i18n/useT';
 
-const STATUSES = ['all', 'confirmed', 'dispatched', 'delivered'];
+const STATUS_KEYS = [
+  { key: 'all',        labelKey: 'supporders.tab.all' },
+  { key: 'confirmed',  labelKey: 'status.confirmed' },
+  { key: 'dispatched', labelKey: 'status.dispatched' },
+  { key: 'delivered',  labelKey: 'status.delivered' },
+];
 
 const STATUS_COLORS = {
   confirmed: 'bg-indigo-100 text-indigo-700',
@@ -16,6 +23,9 @@ const STATUS_COLORS = {
 
 export default function SupplierOrders() {
   const { getAuthHeaders } = useSupplier();
+  const socketRef = useSocket();
+  const t = useT();
+  const STATUSES = STATUS_KEYS.map(s => ({ ...s, label: t(s.labelKey) }));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState('all');
@@ -32,26 +42,38 @@ export default function SupplierOrders() {
 
   useEffect(() => { fetchOrders(activeStatus); }, [activeStatus]);
 
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+    const refresh = () => fetchOrders(activeStatus);
+    socket.on('supplier:new-order', refresh);
+    socket.on('order:updated', refresh);
+    return () => {
+      socket.off('supplier:new-order', refresh);
+      socket.off('order:updated', refresh);
+    };
+  }, [socketRef, activeStatus]);
+
   return (
     <SupplierLayout>
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <ClipboardList className="w-6 h-6 text-emerald-500" /> My Orders
+          <ClipboardList className="w-6 h-6 text-emerald-500" /> {t('supporders.title')}
         </h1>
-        <p className="text-gray-500 text-sm mt-0.5">{orders.length} orders</p>
+        <p className="text-gray-500 text-sm mt-0.5">{t('supporders.count', { n: orders.length })}</p>
       </div>
 
       {/* Filter tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {STATUSES.map(s => (
           <button
-            key={s}
-            onClick={() => setActiveStatus(s)}
+            key={s.key}
+            onClick={() => setActiveStatus(s.key)}
             className={`px-4 py-1.5 rounded-xl text-sm font-medium capitalize transition-colors ${
-              activeStatus === s ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              activeStatus === s.key ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {s}
+            {s.label}
           </button>
         ))}
       </div>
@@ -62,7 +84,7 @@ export default function SupplierOrders() {
         ) : orders.length === 0 ? (
           <div className="py-16 text-center text-gray-400">
             <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>Is category mein koi order nahi</p>
+            <p>{t('supporders.noOrders')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
