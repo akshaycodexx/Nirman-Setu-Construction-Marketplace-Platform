@@ -40,11 +40,12 @@ export default function AdminAnalytics() {
   const t = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     axios.get('/api/admin/analytics')
       .then(r => setData(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -63,6 +64,16 @@ export default function AdminAnalytics() {
   const netProfit = data?.profit?.total || 0;
   const feeIncome = data?.feeIncome || 0;
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64 text-red-500 text-sm font-medium">
+          {t('admin.analytics.error')}
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="mb-6">
@@ -75,12 +86,12 @@ export default function AdminAnalytics() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         {[
-          { label: 'Revenue Collected', value: loading ? '—' : `₹${totalRevenue.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'bg-green-500', sub: 'Advance payments (6 months)' },
-          { label: 'Total Quoted Value', value: loading ? '—' : `₹${totalQuoted.toLocaleString('en-IN')}`, icon: TrendingUp, color: 'bg-orange-500', sub: 'All quotes (6 months)' },
-          { label: 'Orders (6 months)', value: loading ? '—' : totalMonthlyOrders, icon: Package, color: 'bg-blue-500', sub: 'Total orders placed' },
-          { label: 'Avg Order Value', value: loading || !totalOrders ? '—' : `₹${Math.round(totalQuoted / Math.max(totalOrders, 1)).toLocaleString('en-IN')}`, icon: BarChart2, color: 'bg-purple-500', sub: 'Per quoted order' },
-          { label: 'Net Profit', value: loading ? '—' : `₹${netProfit.toLocaleString('en-IN')}`, icon: Sparkles, color: 'bg-emerald-500', sub: 'Quote − supplier payout' },
-          { label: 'Platform Fee Income', value: loading ? '—' : `₹${feeIncome.toLocaleString('en-IN')}`, icon: BadgeIndianRupee, color: 'bg-violet-500', sub: 'Fees collected total' },
+          { label: t('admin.analytics.kpi.revenue'), value: loading ? '—' : `₹${totalRevenue.toLocaleString('en-IN')}`, icon: IndianRupee, color: 'bg-green-500', sub: t('admin.analytics.kpi.revenueSub') },
+          { label: t('admin.analytics.kpi.quoted'), value: loading ? '—' : `₹${totalQuoted.toLocaleString('en-IN')}`, icon: TrendingUp, color: 'bg-orange-500', sub: t('admin.analytics.kpi.quotedSub') },
+          { label: t('admin.analytics.kpi.orders'), value: loading ? '—' : totalMonthlyOrders, icon: Package, color: 'bg-blue-500', sub: t('admin.analytics.kpi.ordersSub') },
+          { label: t('admin.analytics.kpi.avgOrder'), value: loading || !totalMonthlyOrders ? '—' : `₹${Math.round(totalQuoted / Math.max(totalMonthlyOrders, 1)).toLocaleString('en-IN')}`, icon: BarChart2, color: 'bg-purple-500', sub: t('admin.analytics.kpi.avgOrderSub') },
+          { label: t('admin.analytics.kpi.profit'), value: loading ? '—' : `₹${netProfit.toLocaleString('en-IN')}`, icon: Sparkles, color: 'bg-emerald-500', sub: t('admin.analytics.kpi.profitSub') },
+          { label: t('admin.analytics.kpi.feeIncome'), value: loading ? '—' : `₹${feeIncome.toLocaleString('en-IN')}`, icon: BadgeIndianRupee, color: 'bg-violet-500', sub: t('admin.analytics.kpi.feeSub') },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">
@@ -99,11 +110,11 @@ export default function AdminAnalytics() {
           <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-orange-500" /> {t('admin.analytics.monthlyOrders')}
           </h2>
-          <p className="text-xs text-gray-400 mb-3">Last 6 months — hover for value</p>
+          <p className="text-xs text-gray-400 mb-3">{t('admin.analytics.chartSub.orders')}</p>
           {loading ? (
             <div className="h-36 bg-gray-50 animate-pulse rounded-xl" />
           ) : monthly.length === 0 ? (
-            <div className="h-36 flex items-center justify-center text-gray-400 text-sm">No data yet</div>
+            <div className="h-36 flex items-center justify-center text-gray-400 text-sm">{t('admin.analytics.noData')}</div>
           ) : (
             <BarChart data={monthly} valueKey="orders" labelKey="label" color="bg-orange-400" />
           )}
@@ -114,11 +125,11 @@ export default function AdminAnalytics() {
           <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <IndianRupee className="w-4 h-4 text-green-500" /> {t('admin.analytics.monthlyRevenue')}
           </h2>
-          <p className="text-xs text-gray-400 mb-3">Advance collected — hover for value</p>
+          <p className="text-xs text-gray-400 mb-3">{t('admin.analytics.chartSub.revenue')}</p>
           {loading ? (
             <div className="h-36 bg-gray-50 animate-pulse rounded-xl" />
           ) : monthly.length === 0 ? (
-            <div className="h-36 flex items-center justify-center text-gray-400 text-sm">No data yet</div>
+            <div className="h-36 flex items-center justify-center text-gray-400 text-sm">{t('admin.analytics.noData')}</div>
           ) : (
             <BarChart data={monthly} valueKey="revenue" labelKey="label" color="bg-green-400" prefix="₹" />
           )}
@@ -134,7 +145,7 @@ export default function AdminAnalytics() {
           {loading ? (
             <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-50 animate-pulse rounded-lg" />)}</div>
           ) : categories.length === 0 ? (
-            <p className="text-gray-400 text-sm py-8 text-center">No orders yet</p>
+            <p className="text-gray-400 text-sm py-8 text-center">{t('admin.analytics.noOrders')}</p>
           ) : (
             <div className="space-y-3">
               {categories.map(c => {
@@ -144,7 +155,7 @@ export default function AdminAnalytics() {
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="font-medium text-gray-800 capitalize">{CAT_LABELS[c._id] || c._id}</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-gray-500">{c.count} orders</span>
+                        <span className="text-gray-500">{c.count} {t('admin.analytics.orders')}</span>
                         {c.revenue > 0 && <span className="text-gray-400 text-xs">₹{c.revenue.toLocaleString('en-IN')}</span>}
                         <span className="text-xs font-semibold text-orange-600 w-8 text-right">{pct}%</span>
                       </div>
@@ -167,7 +178,7 @@ export default function AdminAnalytics() {
           {loading ? (
             <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-50 animate-pulse rounded-lg" />)}</div>
           ) : cities.length === 0 ? (
-            <p className="text-gray-400 text-sm py-8 text-center">No data yet</p>
+            <p className="text-gray-400 text-sm py-8 text-center">{t('admin.analytics.noData')}</p>
           ) : (
             <div className="space-y-3">
               {cities.map((c, i) => {
@@ -177,7 +188,7 @@ export default function AdminAnalytics() {
                     <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="font-medium text-gray-800">{c._id || 'Unknown'}</span>
+                        <span className="font-medium text-gray-800">{c._id || t('admin.analytics.unknown')}</span>
                         <span className="text-gray-500 text-xs">{c.count}</span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full">
@@ -200,7 +211,7 @@ export default function AdminAnalytics() {
         {loading ? (
           <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-gray-50 animate-pulse rounded-xl" />)}</div>
         ) : topSuppliers.length === 0 ? (
-          <p className="text-gray-400 text-sm py-8 text-center">Koi delivered order abhi tak nahi</p>
+          <p className="text-gray-400 text-sm py-8 text-center">{t('admin.analytics.noDelivered')}</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {topSuppliers.map((s, i) => (
@@ -217,8 +228,8 @@ export default function AdminAnalytics() {
                   {s.businessName && <p className="text-xs text-gray-400">{s.businessName}</p>}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-gray-900">{s.delivered} delivered</p>
-                  {s.revenue > 0 && <p className="text-xs text-gray-400">₹{s.revenue.toLocaleString('en-IN')} collected</p>}
+                  <p className="text-sm font-bold text-gray-900">{s.delivered} {t('admin.analytics.delivered')}</p>
+                  {s.revenue > 0 && <p className="text-xs text-gray-400">₹{s.revenue.toLocaleString('en-IN')} {t('admin.analytics.collected')}</p>}
                 </div>
               </div>
             ))}
