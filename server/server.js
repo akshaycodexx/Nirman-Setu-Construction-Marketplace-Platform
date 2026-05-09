@@ -83,6 +83,14 @@ app.use('/uploads', require('express').static(require('path').join(__dirname, 'u
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/config', (req, res) => res.json({ supportPhone: process.env.SUPPORT_PHONE || '919876543210' }));
 
+// Serve React frontend in production
+if (isProd) {
+  const path = require('path');
+  const clientDist = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(clientDist));
+  app.get('*', (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+}
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   socket.on('join:admin', () => socket.join('admin'));
